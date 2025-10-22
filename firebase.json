@@ -1,0 +1,33 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "ifpi-app",
+          "appId": "1:560636982577:android:309accdbdda861d189ac10",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "ifpi-app",
+          "configurations": {
+            "android": "1:560636982577:android:309accdbdda861d189ac10",
+            "ios": "1:560636982577:ios:c2f302aff49e958589ac10",
+            "macos": "1:560636982577:ios:c2f302aff49e958589ac10",
+            "web": "1:560636982577:web:6f74592625a48a8789ac10",
+            "windows": "1:560636982577:web:a5b2a12b0624fa5f89ac10"
+          }
+        }
+      }
+    }
+  },
+  "emulators": {
+    "dataconnect": {
+      "dataDir": "dataconnect/.dataconnect/pgliteData"
+    }
+  },
+  "dataconnect": {
+    "source": "dataconnect"
+  }
+}
