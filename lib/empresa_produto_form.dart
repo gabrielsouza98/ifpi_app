@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'services/produto_service.dart';
 import 'services/auth_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
 import 'dart:async';
+import 'theme/premium_theme.dart';
+import 'widgets/premium_button.dart';
+import 'widgets/premium_background.dart';
 
 class EmpresaProdutoFormScreen extends StatefulWidget {
   const EmpresaProdutoFormScreen({super.key, this.produto});
@@ -86,54 +90,70 @@ class _EmpresaProdutoFormScreenState extends State<EmpresaProdutoFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = PremiumTheme.getTextPrimary(isDark);
+    final backgroundColor = PremiumTheme.getBackgroundColor(isDark);
+    
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: backgroundColor,
         appBar: AppBar(
-          title: Text(_editingProduto == null ? 'Cadastrar Produto' : 'Editar Produto'),
-          backgroundColor: Colors.red.shade700,
-          foregroundColor: Colors.white,
-          bottom: const TabBar(tabs: [
-            Tab(text: 'Dados'),
-            Tab(text: 'Descrição'),
-            Tab(text: 'Fotos'),
-          ]),
-        ),
-        body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: TabBarView(children: [
-                    _buildDadosTab(),
-                    _buildDescricaoTab(),
-                    _buildFotosTab(context),
-                  ]),
+          title: Text(
+            _editingProduto == null ? 'Cadastrar Produto' : 'Editar Produto',
+            style: PremiumTheme.titleLarge.copyWith(color: textPrimary),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(50),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TabBar(
+                indicator: BoxDecoration(
+                  gradient: PremiumTheme.accentGradient,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      onPressed: _isSaving ? null : _onSalvar,
-                      icon: const Icon(Icons.save),
-                      label: _isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : Text(_editingProduto == null ? 'Salvar produto' : 'Salvar alterações'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade700,
-                        foregroundColor: Colors.white,
-                      ),
+                labelColor: Colors.white,
+                unselectedLabelColor: PremiumTheme.getTextSecondary(isDark),
+                tabs: const [
+                  Tab(text: 'Dados'),
+                  Tab(text: 'Descrição'),
+                  Tab(text: 'Fotos'),
+                ],
+              ),
+            ),
+          ),
+        ),
+        body: PremiumBackground(
+          child: SafeArea(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: TabBarView(children: [
+                      _buildDadosTab(),
+                      _buildDescricaoTab(),
+                      _buildFotosTab(context),
+                    ]),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: PremiumButton(
+                      label: _editingProduto == null ? 'Salvar produto' : 'Salvar alterações',
+                      icon: Icons.save_rounded,
+                      gradient: PremiumTheme.accentGradient,
+                      isLoading: _isSaving,
+                      onPressed: _onSalvar,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -142,171 +162,337 @@ class _EmpresaProdutoFormScreenState extends State<EmpresaProdutoFormScreen> {
   }
 
   Widget _buildDadosTab() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = PremiumTheme.getTextPrimary(isDark);
+    
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextFormField(
-            controller: _nomeController,
-            decoration: const InputDecoration(
-              labelText: 'Nome do produto',
-              border: OutlineInputBorder(),
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: PremiumTheme.glassmorphism(borderRadius: 24, context: context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: _nomeController,
+                  style: TextStyle(color: textPrimary),
+                  decoration: PremiumTheme.premiumInput(
+                    label: 'Nome do produto',
+                    prefixIcon: Icons.shopping_bag_rounded,
+                    context: context,
+                  ),
+                  validator: (String? v) {
+                    if (v == null || v.trim().isEmpty) return 'Informe o nome';
+                    return null;
+                  },
+                )
+                    .animate()
+                    .fadeIn(duration: 500.ms, delay: 200.ms)
+                    .slideX(begin: -0.1, end: 0, duration: 500.ms, delay: 200.ms),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _precoController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(color: textPrimary),
+                  decoration: PremiumTheme.premiumInput(
+                    label: 'Preço (ex: 19.90)',
+                    prefixIcon: Icons.attach_money_rounded,
+                    context: context,
+                  ),
+                  validator: (String? v) {
+                    if (v == null || v.trim().isEmpty) return 'Informe o preço';
+                    final double? val = double.tryParse(v.replaceAll(',', '.'));
+                    if (val == null) return 'Preço inválido';
+                    if (val < 0) return 'Preço deve ser positivo';
+                    return null;
+                  },
+                )
+                    .animate()
+                    .fadeIn(duration: 500.ms, delay: 300.ms)
+                    .slideX(begin: -0.1, end: 0, duration: 500.ms, delay: 300.ms),
+                const SizedBox(height: 20),
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _categoria,
+                      dropdownColor: PremiumTheme.getSurfaceColor(isDark),
+                      style: TextStyle(color: textPrimary),
+                      icon: Icon(Icons.keyboard_arrow_down_rounded,
+                          color: PremiumTheme.getTextSecondary(isDark)),
+                      items: _categorias
+                          .map((String c) => DropdownMenuItem<String>(
+                                value: c,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  child: Text(
+                                    c,
+                                    style: PremiumTheme.bodyMedium,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                      onChanged: (String? v) => setState(() => _categoria = v ?? _categoria),
+                    ),
+                  ),
+                )
+                    .animate()
+                    .fadeIn(duration: 500.ms, delay: 400.ms)
+                    .slideX(begin: -0.1, end: 0, duration: 500.ms, delay: 400.ms),
+              ],
             ),
-            validator: (String? v) {
-              if (v == null || v.trim().isEmpty) return 'Informe o nome';
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _precoController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Preço (ex: 19.90)',
-              border: OutlineInputBorder(),
-            ),
-            validator: (String? v) {
-              if (v == null || v.trim().isEmpty) return 'Informe o preço';
-              final double? val = double.tryParse(v.replaceAll(',', '.'));
-              if (val == null) return 'Preço inválido';
-              if (val < 0) return 'Preço deve ser positivo';
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          InputDecorator(
-            decoration: const InputDecoration(
-              labelText: 'Categoria',
-              border: OutlineInputBorder(),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                isExpanded: true,
-                value: _categoria,
-                items: _categorias
-                    .map((String c) => DropdownMenuItem<String>(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (String? v) => setState(() => _categoria = v ?? _categoria),
-              ),
-            ),
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 600.ms, delay: 100.ms)
+              .scale(delay: 100.ms, duration: 600.ms, begin: const Offset(0.95, 0.95)),
         ],
       ),
     );
   }
 
   Widget _buildDescricaoTab() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = PremiumTheme.getTextPrimary(isDark);
+    
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextFormField(
-            controller: _descricaoController,
-            maxLines: 8,
-            decoration: const InputDecoration(
-              labelText: 'Descrição do produto',
-              alignLabelWithHint: true,
-              border: OutlineInputBorder(),
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: PremiumTheme.glassmorphism(borderRadius: 24, context: context),
+            child: TextFormField(
+              controller: _descricaoController,
+              maxLines: 12,
+              style: TextStyle(color: textPrimary),
+              decoration: PremiumTheme.premiumInput(
+                label: 'Descrição do produto',
+                prefixIcon: Icons.description_rounded,
+                context: context,
+              ).copyWith(
+                alignLabelWithHint: true,
+                contentPadding: const EdgeInsets.all(20),
+              ),
             ),
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 600.ms, delay: 200.ms)
+              .scale(delay: 200.ms, duration: 600.ms, begin: const Offset(0.95, 0.95)),
         ],
       ),
     );
   }
 
   Widget _buildFotosTab(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = PremiumTheme.getTextPrimary(isDark);
+    
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Até 4 fotos', style: Theme.of(context).textTheme.bodyLarge),
-              TextButton.icon(
-                onPressed: (_imageBytesList.length + _existingImageUrls.length) >= 4 ? null : _pickImages,
-                icon: const Icon(Icons.add_a_photo),
-                label: const Text('Adicionar'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 4,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 4 / 3,
-            ),
-            itemBuilder: (BuildContext context, int index) {
-              final bool showExisting = index < _existingImageUrls.length;
-              final bool showNew = !showExisting && (index - _existingImageUrls.length) < _imageBytesList.length;
-              if (!showExisting && !showNew) {
-                return InkWell(
-                  onTap: (_imageBytesList.length + _existingImageUrls.length) >= 4 ? null : _pickImages,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: PremiumTheme.glassmorphism(borderRadius: 24, context: context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Imagens do produto',
+                      style: PremiumTheme.titleLarge.copyWith(
+                        color: textPrimary,
+                      ),
                     ),
-                    child: const Center(
-                      child: Icon(Icons.add_photo_alternate, color: Colors.grey, size: 32),
-                    ),
-                  ),
-                );
-              }
-              return Stack(
-                children: [
-                  Positioned.fill(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        color: Colors.white,
-                        child: FittedBox(
-                          fit: BoxFit.cover,
-                          child: showExisting
-                              ? Image.network(_existingImageUrls[index])
-                              : Image.memory(_imageBytesList[index - _existingImageUrls.length]),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: PremiumTheme.accentGradient,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_imageBytesList.length + _existingImageUrls.length}/4',
+                        style: PremiumTheme.bodySmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 4,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 1,
                   ),
-                  Positioned(
-                    right: 6,
-                    top: 6,
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          if (showExisting) {
-                            _existingImageUrls.removeAt(index);
-                          } else {
-                            final int newIdx = index - _existingImageUrls.length;
-                            _imageBytesList.removeAt(newIdx);
-                            _imageFileNames.removeAt(newIdx);
-                          }
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(20),
+                  itemBuilder: (BuildContext context, int index) {
+                    final bool showExisting = index < _existingImageUrls.length;
+                    final bool showNew = !showExisting &&
+                        (index - _existingImageUrls.length) < _imageBytesList.length;
+                    if (!showExisting && !showNew) {
+                      return GestureDetector(
+                        onTap: (_imageBytesList.length + _existingImageUrls.length) >= 4
+                            ? null
+                            : _pickImages,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
+                              width: 2,
+                              style: BorderStyle.solid,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_photo_alternate_rounded,
+                                size: 40,
+                                color: PremiumTheme.getTextSecondary(isDark),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Adicionar',
+                                style: PremiumTheme.bodySmall.copyWith(
+                                  color: PremiumTheme.getTextTertiary(isDark),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        padding: const EdgeInsets.all(4),
-                        child: const Icon(Icons.close, size: 16, color: Colors.white),
-                      ),
-                    ),
+                      );
+                    }
+                    return Stack(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
+                              width: 1,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              color: PremiumTheme.getSurfaceColor(isDark),
+                              child: showExisting
+                                  ? Image.network(
+                                      _existingImageUrls[index],
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: PremiumTheme.primaryColor,
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        final isDark = Theme.of(context).brightness == Brightness.dark;
+                                        return Icon(
+                                          Icons.image_not_supported_rounded,
+                                          size: 32,
+                                          color: PremiumTheme.getTextTertiary(isDark),
+                                        );
+                                      },
+                                    )
+                                  : Image.memory(
+                                      _imageBytesList[index - _existingImageUrls.length],
+                                      fit: BoxFit.cover,
+                                    ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (showExisting) {
+                                  _existingImageUrls.removeAt(index);
+                                } else {
+                                  final int newIdx = index - _existingImageUrls.length;
+                                  _imageBytesList.removeAt(newIdx);
+                                  _imageFileNames.removeAt(newIdx);
+                                }
+                              });
+                            },
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    PremiumTheme.errorColor,
+                                    PremiumTheme.errorColor.withOpacity(0.8),
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: PremiumTheme.errorColor.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    spreadRadius: 0,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                if ((_imageBytesList.length + _existingImageUrls.length) < 4) ...[
+                  const SizedBox(height: 20),
+                  PremiumButton(
+                    label: 'Adicionar imagens',
+                    icon: Icons.add_photo_alternate_rounded,
+                    gradient: PremiumTheme.accentGradient,
+                    onPressed: _pickImages,
                   ),
                 ],
-              );
-            },
-          ),
+              ],
+            ),
+          )
+              .animate()
+              .fadeIn(duration: 600.ms, delay: 200.ms)
+              .scale(delay: 200.ms, duration: 600.ms, begin: const Offset(0.95, 0.95)),
         ],
       ),
     );

@@ -1,10 +1,136 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'services/produto_service.dart';
+import 'services/auth_service.dart';
+import 'theme/premium_theme.dart';
+import 'widgets/premium_button.dart';
+import 'widgets/premium_background.dart';
 
-class UsuarioProdutoDetalhesScreen extends StatelessWidget {
+class UsuarioProdutoDetalhesScreen extends StatefulWidget {
   const UsuarioProdutoDetalhesScreen({super.key, required this.produto});
 
   final Produto produto;
+
+  @override
+  State<UsuarioProdutoDetalhesScreen> createState() => _UsuarioProdutoDetalhesScreenState();
+}
+
+class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScreen> {
+  final _authService = AuthService();
+  Map<String, dynamic>? _empresaData;
+  bool _isLoadingEmpresa = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarDadosEmpresa();
+  }
+
+  Future<void> _carregarDadosEmpresa() async {
+    try {
+      final dados = await _authService.getEmpresaData(widget.produto.empresaId);
+      if (mounted) {
+        setState(() {
+          _empresaData = dados;
+          _isLoadingEmpresa = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingEmpresa = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _abrirWhatsApp() async {
+    if (_empresaData == null || _empresaData!['whatsapp'] == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Número de WhatsApp não disponível'),
+          backgroundColor: PremiumTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final whatsapp = _empresaData!['whatsapp'] as String;
+    final url = 'https://wa.me/55$whatsapp?text=Olá! Gostaria de saber mais sobre o produto: ${widget.produto.nome}';
+    
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Não foi possível abrir o WhatsApp';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao abrir WhatsApp: $e'),
+            backgroundColor: PremiumTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _abrirGoogleMaps() async {
+    if (_empresaData == null || 
+        _empresaData!['latitude'] == null || 
+        _empresaData!['longitude'] == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Localização não disponível'),
+          backgroundColor: PremiumTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final lat = (_empresaData!['latitude'] as num).toDouble();
+    final lng = (_empresaData!['longitude'] as num).toDouble();
+    
+    // URL do Google Maps com destino e opção de navegação
+    final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving';
+    
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Não foi possível abrir o Google Maps';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao abrir Google Maps: $e'),
+            backgroundColor: PremiumTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
 
   List<String> _buildImageList(Produto p) {
     if (p.imagensUrls.isNotEmpty) return p.imagensUrls;
@@ -14,192 +140,252 @@ class UsuarioProdutoDetalhesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> imagens = _buildImageList(produto);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = PremiumTheme.getTextPrimary(isDark);
+    final backgroundColor = PremiumTheme.getBackgroundColor(isDark);
+    final List<String> imagens = _buildImageList(widget.produto);
+    
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Detalhes do Produto'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
+        title: Text(
+          'Detalhes do Produto',
+          style: PremiumTheme.titleLarge.copyWith(color: textPrimary),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Galeria de imagens principal
-            if (imagens.isNotEmpty)
-              _Galeria(imagens: imagens)
-            else
-              Container(
-                height: 250,
-                width: double.infinity,
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Center(
+      body: PremiumBackground(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Galeria de imagens principal
+              if (imagens.isNotEmpty)
+                _Galeria(imagens: imagens)
+                    .animate()
+                    .fadeIn(duration: 600.ms, delay: 200.ms)
+                    .slideY(begin: 0.2, end: 0, duration: 600.ms, delay: 200.ms)
+              else
+                Container(
+                  height: 300,
+                  width: double.infinity,
+                  margin: const EdgeInsets.all(20),
+                  decoration: PremiumTheme.glassmorphism(borderRadius: 24, context: context),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
-                      SizedBox(height: 8),
-                      Text('Sem imagens', style: TextStyle(color: Colors.grey)),
+                      Icon(
+                        Icons.image_not_supported_rounded,
+                        size: 80,
+                        color: PremiumTheme.getTextTertiary(isDark),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Sem imagens',
+                        style: PremiumTheme.bodyLarge.copyWith(
+                          color: PremiumTheme.getTextSecondary(isDark),
+                        ),
+                      ),
                     ],
                   ),
+                )
+                    .animate()
+                    .fadeIn(duration: 600.ms, delay: 200.ms)
+                    .scale(delay: 200.ms, duration: 600.ms, begin: const Offset(0.95, 0.95)),
+              
+              // Informações do produto
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Nome do produto em destaque
+                    Text(
+                      widget.produto.nome,
+                      style: PremiumTheme.headlineMedium.copyWith(
+                        color: textPrimary,
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 600.ms, delay: 400.ms)
+                        .slideX(begin: -0.1, end: 0, duration: 600.ms, delay: 400.ms),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Preço em destaque
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: PremiumTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: PremiumTheme.primaryColor.withOpacity(0.3),
+                            blurRadius: 15,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        'R\$ ${widget.produto.preco.toStringAsFixed(2)}',
+                        style: PremiumTheme.headlineSmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 600.ms, delay: 500.ms)
+                        .scale(delay: 500.ms, duration: 600.ms, begin: const Offset(0.9, 0.9)),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Categoria
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: PremiumTheme.glassmorphism(borderRadius: 16, context: context),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              gradient: PremiumTheme.primaryGradient,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.category_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Categoria',
+                                  style: PremiumTheme.bodySmall.copyWith(
+                                    color: PremiumTheme.getTextTertiary(isDark),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.produto.categoria,
+                                  style: PremiumTheme.bodyLarge.copyWith(
+                                    color: textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 600.ms, delay: 600.ms)
+                        .slideX(begin: -0.1, end: 0, duration: 600.ms, delay: 600.ms),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Descrição
+                    Text(
+                      'Descrição',
+                      style: PremiumTheme.titleLarge.copyWith(
+                        color: textPrimary,
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 600.ms, delay: 700.ms)
+                        .slideX(begin: -0.1, end: 0, duration: 600.ms, delay: 700.ms),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: PremiumTheme.glassmorphism(borderRadius: 20, context: context),
+                      child: Text(
+                        (widget.produto.descricao == null || widget.produto.descricao!.trim().isEmpty)
+                            ? 'Este produto não possui descrição.'
+                            : widget.produto.descricao!,
+                        style: PremiumTheme.bodyLarge.copyWith(
+                          color: PremiumTheme.getTextSecondary(isDark),
+                          height: 1.6,
+                        ),
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 600.ms, delay: 800.ms)
+                        .scale(delay: 800.ms, duration: 600.ms, begin: const Offset(0.95, 0.95)),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Botões de ação - WhatsApp e Google Maps
+                    if (_isLoadingEmpresa)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: CircularProgressIndicator(
+                            color: PremiumTheme.primaryColor,
+                          ),
+                        ),
+                      )
+                    else if (_empresaData != null) ...[
+                      // Botão WhatsApp
+                      PremiumButton(
+                        label: 'Contatar via WhatsApp',
+                        icon: Icons.chat_rounded,
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF25D366), // Cor verde do WhatsApp
+                            const Color(0xFF128C7E),
+                          ],
+                        ),
+                        onPressed: _abrirWhatsApp,
+                      )
+                          .animate()
+                          .fadeIn(duration: 600.ms, delay: 900.ms)
+                          .slideY(begin: 0.2, end: 0, duration: 600.ms, delay: 900.ms),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Botão Google Maps
+                      PremiumButton(
+                        label: 'Ver rota no Google Maps',
+                        icon: Icons.map_rounded,
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF4285F4), // Cor azul do Google Maps
+                            const Color(0xFF1A73E8),
+                          ],
+                        ),
+                        onPressed: _abrirGoogleMaps,
+                      )
+                          .animate()
+                          .fadeIn(duration: 600.ms, delay: 1000.ms)
+                          .slideY(begin: 0.2, end: 0, duration: 600.ms, delay: 1000.ms),
+                    ] else
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: PremiumTheme.glassmorphism(borderRadius: 16, context: context),
+                        child: Text(
+                          'Informações de contato não disponíveis',
+                          style: PremiumTheme.bodyMedium.copyWith(
+                            color: PremiumTheme.getTextSecondary(isDark),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                          .animate()
+                          .fadeIn(duration: 600.ms, delay: 900.ms),
+                  ],
                 ),
               ),
-            
-            // Informações do produto
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nome do produto em destaque
-                  Text(
-                    produto.nome,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // Preço em destaque
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.teal.shade200),
-                    ),
-                    child: Text(
-                      'R\$ ${produto.preco.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Colors.teal.shade700,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Categoria
-                  Row(
-                    children: [
-                      Icon(Icons.category, size: 20, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Categoria: ',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      Text(
-                        produto.categoria,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: Colors.teal.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Descrição
-                  Text(
-                    'Descrição',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Text(
-                      (produto.descricao == null || produto.descricao!.trim().isEmpty)
-                          ? 'Este produto não possui descrição.'
-                          : produto.descricao!,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey.shade700,
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Botões de ação
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Funcionalidade de contato em desenvolvimento'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.teal,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.message),
-                          label: const Text('Entrar em contato'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Funcionalidade de favoritos em desenvolvimento'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.teal,
-                            side: BorderSide(color: Colors.teal),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.favorite_border),
-                          label: const Text('Favoritar'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -250,27 +436,20 @@ class _GaleriaState extends State<_Galeria> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.all(20),
+      decoration: PremiumTheme.glassmorphism(borderRadius: 24, context: context),
       child: Column(
         children: [
           // Imagem principal
           Container(
-            height: 250,
+            height: 300,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
               child: Stack(
                 children: [
@@ -279,8 +458,10 @@ class _GaleriaState extends State<_Galeria> {
                     itemCount: widget.imagens.length,
                     onPageChanged: (int i) => setState(() => _index = i),
                     itemBuilder: (BuildContext context, int i) {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      
                       return Container(
-                        color: Colors.grey.shade100,
+                        color: PremiumTheme.getSurfaceColor(isDark),
                         child: Image.network(
                           widget.imagens[i],
                           fit: BoxFit.contain,
@@ -289,22 +470,36 @@ class _GaleriaState extends State<_Galeria> {
                             return Center(
                               child: CircularProgressIndicator(
                                 value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
                                     : null,
-                                color: Colors.teal,
+                                color: PremiumTheme.primaryColor,
+                                strokeWidth: 3,
                               ),
                             );
                           },
-                          errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                          errorBuilder: (BuildContext context, Object error,
+                              StackTrace? stackTrace) {
+                            final isDark = Theme.of(context).brightness == Brightness.dark;
+                            
                             return Container(
-                              color: Colors.grey.shade200,
-                              child: const Center(
+                              color: PremiumTheme.getSurfaceColor(isDark),
+                              child: Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
-                                    SizedBox(height: 8),
-                                    Text('Erro ao carregar imagem', style: TextStyle(color: Colors.grey)),
+                                    Icon(
+                                      Icons.image_not_supported_rounded,
+                                      size: 64,
+                                      color: PremiumTheme.getTextTertiary(isDark),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'Erro ao carregar imagem',
+                                      style: PremiumTheme.bodyMedium.copyWith(
+                                        color: PremiumTheme.getTextSecondary(isDark),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -319,23 +514,31 @@ class _GaleriaState extends State<_Galeria> {
                   if (widget.imagens.length > 1) ...[
                     // Botão anterior
                     Positioned(
-                      left: 8,
+                      left: 12,
                       top: 0,
                       bottom: 0,
                       child: Center(
                         child: GestureDetector(
                           onTap: _previousImage,
                           child: Container(
-                            width: 40,
-                            height: 40,
+                            width: 48,
+                            height: 48,
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
+                              gradient: PremiumTheme.primaryGradient,
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: PremiumTheme.primaryColor.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  spreadRadius: 0,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: const Icon(
-                              Icons.chevron_left,
+                              Icons.chevron_left_rounded,
                               color: Colors.white,
-                              size: 24,
+                              size: 28,
                             ),
                           ),
                         ),
@@ -344,23 +547,31 @@ class _GaleriaState extends State<_Galeria> {
                     
                     // Botão próximo
                     Positioned(
-                      right: 8,
+                      right: 12,
                       top: 0,
                       bottom: 0,
                       child: Center(
                         child: GestureDetector(
                           onTap: _nextImage,
                           child: Container(
-                            width: 40,
-                            height: 40,
+                            width: 48,
+                            height: 48,
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
+                              gradient: PremiumTheme.primaryGradient,
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: PremiumTheme.primaryColor.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  spreadRadius: 0,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: const Icon(
-                              Icons.chevron_right,
+                              Icons.chevron_right_rounded,
                               color: Colors.white,
-                              size: 24,
+                              size: 28,
                             ),
                           ),
                         ),
@@ -374,23 +585,30 @@ class _GaleriaState extends State<_Galeria> {
           
           // Contador de imagens e indicadores
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
               borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
               ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Contador de imagens
-                Text(
-                  '${_index + 1} de ${widget.imagens.length}',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: PremiumTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_index + 1} / ${widget.imagens.length}',
+                    style: PremiumTheme.bodySmall.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 
@@ -399,13 +617,25 @@ class _GaleriaState extends State<_Galeria> {
                   children: List<Widget>.generate(widget.imagens.length, (int i) {
                     final bool active = i == _index;
                     return AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: active ? 24 : 8,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: active ? 32 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: active ? Colors.teal : Colors.grey.shade300,
+                        gradient: active ? PremiumTheme.primaryGradient : null,
+                        color: active ? null : (isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.2)),
                         borderRadius: BorderRadius.circular(4),
+                        boxShadow: active
+                            ? [
+                                BoxShadow(
+                                  color: PremiumTheme.primaryColor.withOpacity(0.4),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
                       ),
                     );
                   }),

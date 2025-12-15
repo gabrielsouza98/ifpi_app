@@ -120,6 +120,10 @@ class AuthService {
     required String cnpj,
     required String email,
     required String password,
+    required String whatsapp,
+    required String endereco,
+    required double latitude,
+    required double longitude,
   }) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
@@ -128,18 +132,70 @@ class AuthService {
       );
 
       // Salvar dados da empresa no Firestore
-      await _firestore.collection('empresas').doc(result.user!.uid).set({
+      Map<String, dynamic> empresaData = {
         'nomeEmpresa': nomeEmpresa,
-        'cnpj': cnpj,
         'email': email,
+        'whatsapp': whatsapp,
+        'endereco': endereco,
+        'latitude': latitude,
+        'longitude': longitude,
         'tipo': 'empresa',
         'dataCriacao': FieldValue.serverTimestamp(),
         'ativo': true,
-      });
+      };
+      
+      // Adicionar CNPJ apenas se fornecido
+      if (cnpj.isNotEmpty) {
+        empresaData['cnpj'] = cnpj;
+      }
+
+      await _firestore.collection('empresas').doc(result.user!.uid).set(empresaData);
 
       return result;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
+    }
+  }
+  
+  // Atualizar dados da empresa
+  Future<void> atualizarDadosEmpresa({
+    String? endereco,
+    double? latitude,
+    double? longitude,
+    String? tema, // 'dark' ou 'light'
+    String? whatsapp,
+  }) async {
+    if (currentUser == null) {
+      throw Exception('Usuário não autenticado');
+    }
+
+    try {
+      Map<String, dynamic> updateData = {};
+      
+      if (endereco != null) {
+        updateData['endereco'] = endereco;
+      }
+      if (latitude != null) {
+        updateData['latitude'] = latitude;
+      }
+      if (longitude != null) {
+        updateData['longitude'] = longitude;
+      }
+      if (tema != null) {
+        updateData['tema'] = tema;
+      }
+      if (whatsapp != null) {
+        updateData['whatsapp'] = whatsapp;
+      }
+      
+      if (updateData.isNotEmpty) {
+        await _firestore
+            .collection('empresas')
+            .doc(currentUser!.uid)
+            .update(updateData);
+      }
+    } catch (e) {
+      throw Exception('Erro ao atualizar dados: ${e.toString()}');
     }
   }
 
@@ -329,6 +385,24 @@ class AuthService {
     }
 
     return null;
+  }
+
+  // Obter dados da empresa pelo ID
+  Future<Map<String, dynamic>?> getEmpresaData(String empresaId) async {
+    try {
+      DocumentSnapshot empresaDoc = await _firestore
+          .collection('empresas')
+          .doc(empresaId)
+          .get();
+
+      if (empresaDoc.exists) {
+        return empresaDoc.data() as Map<String, dynamic>;
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   // Tratamento de exceções do Firebase Auth

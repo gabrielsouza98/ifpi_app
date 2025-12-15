@@ -1,15 +1,19 @@
 workflows:
-  ios-simulator:
-    name: Build iOS Simulator
-    max_build_duration: 60
+
+  flutter-ios-simulator:
+
+    name: Flutter iOS Simulator
+
     environment:
-      flutter: stable
+
+      flutter: 3.27.3
+
+      xcode: 16.2
+
     scripts:
-      - name: Get dependencies
-        script: |
-          flutter pub get
-      - name: Build for iOS simulator
-        script: |
-          flutter build ios --simulator
+
+      - flutter build ios --simulator --flavor staging  # --flavor is optional
+
     artifacts:
+
       - build/ios/iphonesimulator/Runner.app
