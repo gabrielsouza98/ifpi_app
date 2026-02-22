@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'services/produto_service.dart';
 import 'services/auth_service.dart';
+import 'services/analytics_service.dart';
 import 'theme/premium_theme.dart';
 import 'widgets/premium_button.dart';
 import 'widgets/premium_background.dart';
@@ -27,6 +28,14 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
   void initState() {
     super.initState();
     _carregarDadosEmpresa();
+    _registrarVisualizacao();
+  }
+
+  void _registrarVisualizacao() {
+    ProdutoAnalytics.registrarVisualizacao(widget.produto.id, widget.produto.empresaId)
+        .catchError((Object e) {
+      assert(true, 'Analytics view: $e');
+    });
   }
 
   Future<void> _carregarDadosEmpresa() async {
@@ -68,11 +77,11 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
     try {
       setState(() => _abrindoWhatsApp = true);
       final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Não foi possível abrir o WhatsApp';
-      }
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      ProdutoAnalytics.registrarCliqueWhatsApp(widget.produto.id, widget.produto.empresaId)
+          .catchError((Object e) {
+        assert(true, 'Analytics whatsapp: $e');
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,11 +126,11 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
     try {
       setState(() => _abrindoMaps = true);
       final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Não foi possível abrir o Google Maps';
-      }
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      ProdutoAnalytics.registrarCliqueRota(widget.produto.id, widget.produto.empresaId)
+          .catchError((Object e) {
+        assert(true, 'Analytics rotas: $e');
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

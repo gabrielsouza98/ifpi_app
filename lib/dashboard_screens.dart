@@ -678,16 +678,7 @@ class EmpresaDashboardScreen extends StatelessWidget {
                       Icons.analytics_rounded,
                       PremiumTheme.secondaryColor,
                       () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Funcionalidade em desenvolvimento'),
-                            backgroundColor: PremiumTheme.accentColor,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
+                        Navigator.pushNamed(context, '/empresa/produtos');
                       },
                       2,
                     ),

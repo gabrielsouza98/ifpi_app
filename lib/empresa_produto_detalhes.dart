@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'services/produto_service.dart';
+import 'services/analytics_service.dart';
 import 'theme/premium_theme.dart';
 import 'widgets/premium_button.dart';
 import 'widgets/premium_background.dart';
@@ -242,6 +243,14 @@ class _EmpresaProdutoDetalhesScreenState
                     
                     const SizedBox(height: 32),
                     
+                    // Seção Analytics
+                    _SecaoAnalytics(produtoId: produto.id)
+                        .animate()
+                        .fadeIn(duration: 600.ms, delay: 850.ms)
+                        .slideY(begin: 0.1, end: 0, duration: 600.ms, delay: 850.ms),
+                    
+                    const SizedBox(height: 32),
+                    
                     // Botão de exclusão
                     PremiumButton(
                       label: 'Excluir produto',
@@ -328,6 +337,271 @@ class _EmpresaProdutoDetalhesScreenState
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+String _formatarDataHora(DateTime d) {
+  final dia = d.day.toString().padLeft(2, '0');
+  final mes = d.month.toString().padLeft(2, '0');
+  final ano = d.year;
+  final h = d.hour.toString().padLeft(2, '0');
+  final min = d.minute.toString().padLeft(2, '0');
+  return '$dia/$mes/$ano às $h:$min';
+}
+
+class _SecaoAnalytics extends StatelessWidget {
+  const _SecaoAnalytics({required this.produtoId});
+  final String produtoId;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = PremiumTheme.getTextPrimary(isDark);
+    final textSecondary = PremiumTheme.getTextSecondary(isDark);
+    final textTertiary = PremiumTheme.getTextTertiary(isDark);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: PremiumTheme.glassmorphism(borderRadius: 20, context: context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: PremiumTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.analytics_rounded, size: 22, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Estatísticas do produto',
+                style: PremiumTheme.titleLarge.copyWith(color: textPrimary, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          StreamBuilder<ProdutoAnalytics>(
+            stream: ProdutoAnalytics.streamAnalyticsProduto(produtoId),
+            builder: (BuildContext context, AsyncSnapshot<ProdutoAnalytics> snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(color: PremiumTheme.primaryColor),
+                  ),
+                );
+              }
+              final analytics = snapshot.data ?? ProdutoAnalytics(
+                totalVisualizacoes: 0,
+                totalWhatsApp: 0,
+                totalRotas: 0,
+                ultimasVisualizacoes: const [],
+                ultimosEventosWhatsApp: const [],
+                ultimosEventosRotas: const [],
+              );
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _CardMetrica(
+                          icone: Icons.visibility_rounded,
+                          label: 'Visualizações',
+                          valor: analytics.totalVisualizacoes.toString(),
+                          cor: PremiumTheme.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _CardMetrica(
+                          icone: Icons.chat_rounded,
+                          label: 'Cliques WhatsApp',
+                          valor: analytics.totalWhatsApp.toString(),
+                          cor: const Color(0xFF25D366),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _CardMetrica(
+                          icone: Icons.map_rounded,
+                          label: 'Ver rota (Maps)',
+                          valor: analytics.totalRotas.toString(),
+                          cor: const Color(0xFF4285F4),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _CardMetrica(
+                          icone: Icons.touch_app_rounded,
+                          label: 'Taxa de contato',
+                          valor: _taxaContato(analytics),
+                          cor: PremiumTheme.accentColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Quando pessoas viram o produto',
+                    style: PremiumTheme.bodyLarge.copyWith(color: textPrimary, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  if (analytics.ultimasVisualizacoes.isEmpty)
+                    Text(
+                      'Nenhuma visualização registrada ainda.',
+                      style: PremiumTheme.bodyMedium.copyWith(color: textTertiary),
+                    )
+                  else
+                    ...analytics.ultimasVisualizacoes.take(15).map((DateTime d) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Icon(Icons.schedule_rounded, size: 16, color: textTertiary),
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatarDataHora(d),
+                            style: PremiumTheme.bodyMedium.copyWith(color: textSecondary),
+                          ),
+                        ],
+                      ),
+                    )),
+                  if (analytics.ultimasVisualizacoes.length > 15)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '+ ${analytics.ultimasVisualizacoes.length - 15} visualizações anteriores',
+                        style: PremiumTheme.bodySmall.copyWith(color: textTertiary),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Últimos cliques no WhatsApp',
+                    style: PremiumTheme.bodyLarge.copyWith(color: textPrimary, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  if (analytics.ultimosEventosWhatsApp.isEmpty)
+                    Text(
+                      'Nenhum clique no WhatsApp ainda.',
+                      style: PremiumTheme.bodyMedium.copyWith(color: textTertiary),
+                    )
+                  else
+                    ...analytics.ultimosEventosWhatsApp.take(10).map((DateTime d) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Icon(Icons.chat_rounded, size: 16, color: const Color(0xFF25D366)),
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatarDataHora(d),
+                            style: PremiumTheme.bodyMedium.copyWith(color: textSecondary),
+                          ),
+                        ],
+                      ),
+                    )),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Últimas buscas de rota',
+                    style: PremiumTheme.bodyLarge.copyWith(color: textPrimary, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  if (analytics.ultimosEventosRotas.isEmpty)
+                    Text(
+                      'Ninguém abriu a rota ainda.',
+                      style: PremiumTheme.bodyMedium.copyWith(color: textTertiary),
+                    )
+                  else
+                    ...analytics.ultimosEventosRotas.take(10).map((DateTime d) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Icon(Icons.map_rounded, size: 16, color: const Color(0xFF4285F4)),
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatarDataHora(d),
+                            style: PremiumTheme.bodyMedium.copyWith(color: textSecondary),
+                          ),
+                        ],
+                      ),
+                    )),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _taxaContato(ProdutoAnalytics a) {
+    if (a.totalVisualizacoes == 0) return '0%';
+    final contatos = a.totalWhatsApp + a.totalRotas;
+    final pct = (contatos / a.totalVisualizacoes * 100).round();
+    return '$pct%';
+  }
+}
+
+class _CardMetrica extends StatelessWidget {
+  const _CardMetrica({
+    required this.icone,
+    required this.label,
+    required this.valor,
+    required this.cor,
+  });
+  final IconData icone;
+  final String label;
+  final String valor;
+  final Color cor;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = PremiumTheme.getTextSecondary(isDark);
+    final textTertiary = PremiumTheme.getTextTertiary(isDark);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: cor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icone, size: 20, color: cor),
+          const SizedBox(height: 8),
+          Text(
+            valor,
+            style: PremiumTheme.titleLarge.copyWith(
+              color: PremiumTheme.getTextPrimary(isDark),
+              fontWeight: FontWeight.w800,
+              fontSize: 22,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: PremiumTheme.bodySmall.copyWith(color: textTertiary),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
