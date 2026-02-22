@@ -20,6 +20,8 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
   final _authService = AuthService();
   Map<String, dynamic>? _empresaData;
   bool _isLoadingEmpresa = true;
+  bool _abrindoWhatsApp = false;
+  bool _abrindoMaps = false;
 
   @override
   void initState() {
@@ -64,6 +66,7 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
     final url = 'https://wa.me/55$whatsapp?text=Olá! Gostaria de saber mais sobre o produto: ${widget.produto.nome}';
     
     try {
+      setState(() => _abrindoWhatsApp = true);
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -83,6 +86,8 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _abrindoWhatsApp = false);
     }
   }
 
@@ -110,6 +115,7 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
     final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving';
     
     try {
+      setState(() => _abrindoMaps = true);
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -129,6 +135,8 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _abrindoMaps = false);
     }
   }
 
@@ -344,7 +352,8 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
                             const Color(0xFF128C7E),
                           ],
                         ),
-                        onPressed: _abrirWhatsApp,
+                        isLoading: _abrindoWhatsApp,
+                        onPressed: _abrindoWhatsApp ? null : _abrirWhatsApp,
                       )
                           .animate()
                           .fadeIn(duration: 600.ms, delay: 900.ms)
@@ -362,7 +371,8 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
                             const Color(0xFF1A73E8),
                           ],
                         ),
-                        onPressed: _abrirGoogleMaps,
+                        isLoading: _abrindoMaps,
+                        onPressed: _abrindoMaps ? null : _abrirGoogleMaps,
                       )
                           .animate()
                           .fadeIn(duration: 600.ms, delay: 1000.ms)

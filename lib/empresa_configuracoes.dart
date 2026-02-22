@@ -243,7 +243,7 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
                               // Título
                               Text(
                                 'Configurações da Empresa',
-                                style: PremiumTheme.headlineSmall,
+                                style: PremiumTheme.headlineSmall.copyWith(color: textPrimary),
                                 textAlign: TextAlign.center,
                               )
                                   .animate()

@@ -21,19 +21,44 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
 
   final TextEditingController _searchController = TextEditingController();
 
-  final List<String> _categories = <String>[
+  /// Mesma lista de categorias do cadastro de produtos (empresa)
+  static const List<String> _categories = <String>[
     'alimentos',
     'limpeza',
     'eletrônicos',
     'vestuário',
+    'calçados',
+    'acessórios',
+    'beleza e cuidados pessoais',
+    'perfumaria',
+    'farmácia',
+    'bebidas',
+    'pet shop',
+    'papelaria',
+    'brinquedos',
+    'esporte e lazer',
+    'móveis',
+    'decoração',
+    'cama, mesa e banho',
+    'informática',
+    'telefonia',
+    'automotivo',
+    'ferramentas',
+    'construção',
+    'jardim',
+    'livros',
+    'instrumentos musicais',
+    'outros',
   ];
 
   String _selectedCategory = '';
 
+  final ScrollController _categoryScrollController = ScrollController();
 
   @override
   void dispose() {
     _searchController.dispose();
+    _categoryScrollController.dispose();
     super.dispose();
   }
 
@@ -55,6 +80,14 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
+            tooltip: 'Configurações',
+            icon: Icon(Icons.settings_rounded, color: textPrimary),
+            onPressed: () {
+              Navigator.pushNamed(context, '/usuario/configuracoes');
+            },
+          ),
+          IconButton(
+            tooltip: 'Sair',
             icon: Icon(Icons.logout_rounded, color: textPrimary),
             onPressed: () async {
               await _authService.signOut();
@@ -242,59 +275,66 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
     final textPrimary = PremiumTheme.getTextPrimary(isDark);
     
     return SizedBox(
-      height: 50,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: _categories.length + 1,
-        separatorBuilder: (BuildContext context, int index) => const SizedBox(width: 12),
-        itemBuilder: (BuildContext context, int index) {
-          final bool isAll = index == 0;
-          final String label = isAll ? 'Todas' : _categories[index - 1];
-          final bool selected = isAll ? _selectedCategory.isEmpty : _selectedCategory == label;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedCategory = isAll ? '' : label.toLowerCase();
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: selected
-                    ? PremiumTheme.primaryGradient
-                    : null,
-                color: selected
-                    ? null
-                    : Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(
+      height: 58,
+      child: Scrollbar(
+        controller: _categoryScrollController,
+        thumbVisibility: true,
+        trackVisibility: true,
+        child: ListView.separated(
+          controller: _categoryScrollController,
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.only(left: 4, right: 4, top: 2, bottom: 14),
+          itemCount: _categories.length + 1,
+          separatorBuilder: (BuildContext context, int index) => const SizedBox(width: 12),
+          itemBuilder: (BuildContext context, int index) {
+            final bool isAll = index == 0;
+            final String label = isAll ? 'Todas' : _categories[index - 1];
+            final bool selected = isAll ? _selectedCategory.isEmpty : _selectedCategory == label;
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedCategory = isAll ? '' : label;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: selected ? PremiumTheme.primaryGradient : null,
                   color: selected
-                      ? Colors.transparent
-                      : Colors.white.withOpacity(0.2),
-                  width: 1.5,
+                      ? null
+                      : PremiumTheme.getSurfaceColor(isDark).withOpacity(isDark ? 0.4 : 1.0),
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: selected
+                        ? Colors.transparent
+                        : (isDark
+                            ? Colors.white.withOpacity(0.2)
+                            : Colors.black.withOpacity(0.08)),
+                    width: 1.5,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: PremiumTheme.primaryColor.withOpacity(0.3),
+                            blurRadius: 12,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
                 ),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: PremiumTheme.primaryColor.withOpacity(0.3),
-                          blurRadius: 12,
-                          spreadRadius: 0,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Text(
-                label,
-                style: PremiumTheme.bodyMedium.copyWith(
-                  color: selected ? Colors.white : textPrimary,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                child: Text(
+                  label,
+                  style: PremiumTheme.bodyMedium.copyWith(
+                    color: selected ? Colors.white : textPrimary,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

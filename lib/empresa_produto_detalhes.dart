@@ -5,10 +5,25 @@ import 'theme/premium_theme.dart';
 import 'widgets/premium_button.dart';
 import 'widgets/premium_background.dart';
 
-class EmpresaProdutoDetalhesScreen extends StatelessWidget {
+class EmpresaProdutoDetalhesScreen extends StatefulWidget {
   const EmpresaProdutoDetalhesScreen({super.key, required this.produto});
 
   final Produto produto;
+
+  @override
+  State<EmpresaProdutoDetalhesScreen> createState() =>
+      _EmpresaProdutoDetalhesScreenState();
+}
+
+class _EmpresaProdutoDetalhesScreenState
+    extends State<EmpresaProdutoDetalhesScreen> {
+  late Produto produto;
+
+  @override
+  void initState() {
+    super.initState();
+    produto = widget.produto;
+  }
 
   List<String> _buildImageList(Produto p) {
     if (p.imagensUrls.isNotEmpty) return p.imagensUrls;
@@ -40,14 +55,21 @@ class EmpresaProdutoDetalhesScreen extends StatelessWidget {
                 gradient: PremiumTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.edit_rounded,
                 color: Colors.white,
                 size: 20,
               ),
             ),
             onPressed: () async {
-              await Navigator.of(context).pushNamed('/produto/editar', arguments: produto);
+              final resultado = await Navigator.of(context)
+                  .pushNamed('/produto/editar', arguments: produto);
+
+              if (resultado is Produto && mounted) {
+                setState(() {
+                  produto = resultado;
+                });
+              }
             },
           ),
         ],

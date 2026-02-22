@@ -518,7 +518,14 @@ class _EmpresaProdutoFormScreenState extends State<EmpresaProdutoFormScreen> {
       if (b.lengthInBytes > maxBytes) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Imagem ${f.name} maior que 5MB'), backgroundColor: Colors.orange),
+            SnackBar(
+              content: Text('Imagem ${f.name} maior que 5MB'),
+              backgroundColor: PremiumTheme.errorColor,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           );
         }
         continue;
@@ -541,25 +548,38 @@ class _EmpresaProdutoFormScreenState extends State<EmpresaProdutoFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
     try {
-      final String? empresaId = _authService.currentUser?.uid;
-      if (empresaId == null) {
+      final String? empresaIdAtual = _authService.currentUser?.uid;
+      if (empresaIdAtual == null) {
         throw Exception('Usuário não autenticado');
       }
+
       final double preco = double.parse(_precoController.text.replaceAll(',', '.'));
+
+      // Monta lista final de URLs de imagens (existentes + novas)
       List<String> imagensUrls = <String>[];
       imagensUrls.addAll(_existingImageUrls);
+
       if (_imageBytesList.isNotEmpty) {
         for (int i = 0; i < _imageBytesList.length; i++) {
           final String rawName = _imageFileNames[i];
           final String nameLower = rawName.toLowerCase();
           String ext = '.jpg';
           String contentType = 'image/jpeg';
-          if (nameLower.endsWith('.png')) { ext = '.png'; contentType = 'image/png'; }
-          if (nameLower.endsWith('.webp')) { ext = '.webp'; contentType = 'image/webp'; }
+
+          if (nameLower.endsWith('.png')) {
+            ext = '.png';
+            contentType = 'image/png';
+          }
+          if (nameLower.endsWith('.webp')) {
+            ext = '.webp';
+            contentType = 'image/webp';
+          }
+
           final String uniqueName = 'prod_${DateTime.now().millisecondsSinceEpoch}_$i$ext';
+
           try {
             final String url = await _produtoService.uploadImagemProduto(
-              empresaId: empresaId,
+              empresaId: _editingProduto?.empresaId ?? empresaIdAtual,
               fileName: uniqueName,
               bytes: _imageBytesList[i],
               contentType: contentType,
@@ -568,52 +588,67 @@ class _EmpresaProdutoFormScreenState extends State<EmpresaProdutoFormScreen> {
           } on TimeoutException {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Upload demorou demais. Tente novamente.'), backgroundColor: Colors.red),
+                SnackBar(
+                  content: const Text('Upload demorou demais. Tente novamente.'),
+                  backgroundColor: PremiumTheme.errorColor,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               );
             }
             return;
           }
         }
       }
+
+      // Cria a instância de Produto que representa o estado final
+      final Produto produtoAtualizado = Produto(
+        id: _editingProduto?.id ?? '',
+        nome: _nomeController.text.trim(),
+        preco: preco,
+        categoria: _categoria,
+        empresaId: _editingProduto?.empresaId ?? empresaIdAtual,
+        criadoEm: _editingProduto?.criadoEm ?? DateTime.now(),
+        imagemUrl: imagensUrls.isNotEmpty ? imagensUrls.first : null,
+        descricao: _descricaoController.text.trim().isEmpty
+            ? null
+            : _descricaoController.text.trim(),
+        imagensUrls: imagensUrls,
+      );
+
       if (_editingProduto == null) {
-        await _produtoService.criarProduto(
-          Produto(
-            id: '',
-            nome: _nomeController.text.trim(),
-            preco: preco,
-            categoria: _categoria,
-            empresaId: empresaId,
-            criadoEm: DateTime.now(),
-            imagemUrl: imagensUrls.isNotEmpty ? imagensUrls.first : null,
-            descricao: _descricaoController.text.trim().isEmpty ? null : _descricaoController.text.trim(),
-            imagensUrls: imagensUrls,
-          ),
-        );
+        await _produtoService.criarProduto(produtoAtualizado);
       } else {
-        await _produtoService.atualizarProduto(
-          Produto(
-            id: _editingProduto!.id,
-            nome: _nomeController.text.trim(),
-            preco: preco,
-            categoria: _categoria,
-            empresaId: _editingProduto!.empresaId,
-            criadoEm: _editingProduto!.criadoEm,
-            imagemUrl: imagensUrls.isNotEmpty ? imagensUrls.first : null,
-            descricao: _descricaoController.text.trim().isEmpty ? null : _descricaoController.text.trim(),
-            imagensUrls: imagensUrls,
-          ),
-        );
+        await _produtoService.atualizarProduto(produtoAtualizado);
       }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Produto cadastrado!'), backgroundColor: Colors.green),
+          SnackBar(
+            content: const Text('Produto cadastrado!'),
+            backgroundColor: PremiumTheme.successColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         );
-        Navigator.pop(context);
+        // devolve o produto atualizado para a tela anterior
+        Navigator.pop(context, produtoAtualizado);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: ${e.toString()}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Erro: ${e.toString()}'),
+            backgroundColor: PremiumTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         );
       }
     } finally {

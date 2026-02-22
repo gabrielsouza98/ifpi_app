@@ -734,6 +734,7 @@ class _EmpresaCriarContaScreenState extends State<EmpresaCriarContaScreen> {
                             label: 'WhatsApp (com DDD, apenas números)',
                             prefixIcon: Icons.phone_rounded,
                             hintText: 'Ex: 86999999999',
+                            context: context,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {

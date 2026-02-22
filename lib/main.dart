@@ -40,28 +40,29 @@ class MyApp extends StatelessWidget {
             darkTheme: ThemeService.darkTheme,
             themeMode: themeService.themeMode,
             debugShowCheckedModeBanner: false,
-      routes: {
-        '/usuario': (context) => const UsuarioLoginScreen(),
-        '/empresa': (context) => const EmpresaLoginScreen(),
-        '/usuario/criar-conta': (context) => const UsuarioCriarContaScreen(),
-        '/empresa/criar-conta': (context) => const EmpresaCriarContaScreen(),
-        '/usuario/esqueci-senha': (context) => const UsuarioEsqueciSenhaScreen(),
-        '/empresa/esqueci-senha': (context) => const EmpresaEsqueciSenhaScreen(),
-        '/usuario/dashboard': (context) => UsuarioDashboardScreen(),
-        '/empresa/dashboard': (context) => EmpresaDashboardScreen(),
-        '/empresa/produto/novo': (context) => const EmpresaProdutoFormScreen(),
-        '/empresa/produtos': (context) => EmpresaMeusProdutosScreen(),
-        '/empresa/configuracoes': (context) => const EmpresaConfiguracoesScreen(),
-        '/usuario/configuracoes': (context) => const UsuarioConfiguracoesScreen(),
-        '/produto/editar': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments;
-          if (args is Produto) {
-            return EmpresaProdutoFormScreen(produto: args);
-          }
-          return const EmpresaProdutoFormScreen();
-        },
-      },
-            home: const MyHomePage(title: 'Descontaí'),
+            initialRoute: '/',
+            routes: {
+              '/': (context) => const MyHomePage(title: 'Descontaí'),
+              '/usuario': (context) => const UsuarioLoginScreen(),
+              '/empresa': (context) => const EmpresaLoginScreen(),
+              '/usuario/criar-conta': (context) => const UsuarioCriarContaScreen(),
+              '/empresa/criar-conta': (context) => const EmpresaCriarContaScreen(),
+              '/usuario/esqueci-senha': (context) => const UsuarioEsqueciSenhaScreen(),
+              '/empresa/esqueci-senha': (context) => const EmpresaEsqueciSenhaScreen(),
+              '/usuario/dashboard': (context) => UsuarioDashboardScreen(),
+              '/empresa/dashboard': (context) => EmpresaDashboardScreen(),
+              '/empresa/produto/novo': (context) => const EmpresaProdutoFormScreen(),
+              '/empresa/produtos': (context) => EmpresaMeusProdutosScreen(),
+              '/empresa/configuracoes': (context) => const EmpresaConfiguracoesScreen(),
+              '/usuario/configuracoes': (context) => const UsuarioConfiguracoesScreen(),
+              '/produto/editar': (context) {
+                final args = ModalRoute.of(context)?.settings.arguments;
+                if (args is Produto) {
+                  return EmpresaProdutoFormScreen(produto: args);
+                }
+                return const EmpresaProdutoFormScreen();
+              },
+            },
           );
         },
       ),
@@ -568,17 +569,21 @@ class _UsuarioLoginScreenState extends State<UsuarioLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = PremiumTheme.getBackgroundColor(isDark);
+    final textPrimary = PremiumTheme.getTextPrimary(isDark);
+
     return Scaffold(
-      backgroundColor: PremiumTheme.backgroundColor,
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: Text(
           'Acesso Comprador',
-          style: PremiumTheme.titleLarge.copyWith(color: PremiumTheme.textPrimary),
+          style: PremiumTheme.titleLarge.copyWith(color: textPrimary),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: PremiumTheme.textPrimary),
+          icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -659,7 +664,7 @@ class _UsuarioLoginScreenState extends State<UsuarioLoginScreen> {
                   // Card de Formulário com Glassmorphism
                   Container(
                     padding: const EdgeInsets.all(28),
-                    decoration: PremiumTheme.glassmorphism(),
+                    decoration: PremiumTheme.glassmorphism(context: context),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -667,10 +672,11 @@ class _UsuarioLoginScreenState extends State<UsuarioLoginScreen> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          style: TextStyle(color: PremiumTheme.textPrimary),
+                          style: TextStyle(color: textPrimary),
                           decoration: PremiumTheme.premiumInput(
                             label: 'Endereço de email',
                             prefixIcon: Icons.email_rounded,
+                            context: context,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -692,16 +698,17 @@ class _UsuarioLoginScreenState extends State<UsuarioLoginScreen> {
                         TextFormField(
                           controller: _senhaController,
                           obscureText: _obscurePassword,
-                          style: TextStyle(color: PremiumTheme.textPrimary),
+                          style: TextStyle(color: textPrimary),
                           decoration: PremiumTheme.premiumInput(
                             label: 'Senha',
                             prefixIcon: Icons.lock_rounded,
+                            context: context,
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
                                     ? Icons.visibility_rounded
                                     : Icons.visibility_off_rounded,
-                                color: PremiumTheme.textSecondary,
+                                color: PremiumTheme.getTextSecondary(isDark),
                               ),
                               onPressed: () {
                                 setState(() => _obscurePassword = !_obscurePassword);
@@ -758,6 +765,9 @@ class _UsuarioLoginScreenState extends State<UsuarioLoginScreen> {
                                   _senhaController.text,
                                 );
                                 if (mounted) {
+                                  // recarrega tema para o usuário autenticado
+                                  final themeService = Provider.of<ThemeService>(context, listen: false);
+                                  await themeService.reloadTheme();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: const Text('Acesso realizado com sucesso'),
@@ -846,6 +856,8 @@ class _UsuarioLoginScreenState extends State<UsuarioLoginScreen> {
                                         final result =
                                             await _authService.signInWithGoogleUsuario();
                                         if (result != null && mounted) {
+                                          final themeService = Provider.of<ThemeService>(context, listen: false);
+                                          await themeService.reloadTheme();
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
                                               content: const Text('Acesso realizado com sucesso'),
@@ -1178,6 +1190,9 @@ class _EmpresaLoginScreenState extends State<EmpresaLoginScreen> {
                                   _senhaController.text,
                                 );
                                 if (mounted) {
+                                  final themeService =
+                                      Provider.of<ThemeService>(context, listen: false);
+                                  await themeService.reloadTheme();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: const Text('Acesso realizado com sucesso'),
@@ -1266,6 +1281,8 @@ class _EmpresaLoginScreenState extends State<EmpresaLoginScreen> {
                                         final result =
                                             await _authService.signInWithGoogleEmpresa();
                                         if (result != null && mounted) {
+                                          final themeService = Provider.of<ThemeService>(context, listen: false);
+                                          await themeService.reloadTheme();
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
                                               content: const Text('Acesso realizado com sucesso'),
