@@ -1,0 +1,131 @@
+Política de Privacidade – Descontaí
+
+Última atualização: [preencha a data]
+
+Esta Política de Privacidade descreve como o aplicativo Descontaí coleta, utiliza, armazena e protege os dados dos seus usuários, tanto compradores quanto empresas parceiras.
+
+Ao utilizar o Descontaí, você declara que leu e concorda com esta Política.
+
+1. Controlador dos dados
+
+- Nome do aplicativo: Descontaí
+- Finalidade principal: Plataforma de divulgação de produtos e ofertas de estabelecimentos locais.
+- Contato para assuntos de privacidade: [seu email de contato]
+
+Se você for pessoa jurídica (empresa dona do app), inclua também: razão social, CNPJ e endereço quando publicar esta política.
+
+2. Quais dados coletamos
+
+2.1. Dados fornecidos por você
+
+Compradores (usuários):
+- Nome
+- Email
+- Senha (armazenada de forma criptografada pelo Firebase Authentication)
+- Foto de perfil (quando login com Google, se disponível)
+- Preferências de tema (claro/escuro)
+
+Empresas:
+- Nome da empresa
+- Email
+- Senha (armazenada de forma criptografada pelo Firebase Authentication)
+- CNPJ (opcional, se informado)
+- WhatsApp
+- Endereço da empresa
+- Coordenadas aproximadas (latitude e longitude) da localização da empresa
+- Dados dos produtos cadastrados (nome, categoria, preço, descrição, fotos)
+
+2.2. Dados coletados automaticamente
+
+- Identificador de usuário fornecido pelo Firebase
+- Registros de uso do app (por exemplo: visualizações de produtos, cliques em “WhatsApp”, abertura de rotas no mapa) para fins de analytics internos
+- Informações técnicas do dispositivo (modelo, sistema operacional, idioma, data/hora de acesso), conforme fornecido pelas bibliotecas utilizadas
+
+3. Tecnologias e provedores utilizados
+
+O Descontaí utiliza serviços de terceiros para operar:
+
+- Firebase (Google)
+  - Firebase Authentication: login por email/senha e Google.
+  - Cloud Firestore: armazenamento de dados de usuários, empresas, produtos e analytics.
+  - Cloud Storage: armazenamento de imagens de produtos.
+- Google Sign-In: autenticação com conta Google.
+- Google Maps / Places API: exibição de mapas, rotas e busca de endereços.
+- Outras bibliotecas do Flutter: para interface, animações e recursos técnicos.
+
+O uso dos dados por esses terceiros é regido também pelas políticas deles, em especial a Política de Privacidade do Google: https://policies.google.com/privacy
+
+4. Para que usamos seus dados
+
+Utilizamos seus dados pessoais para:
+
+- Criar e gerenciar sua conta (usuário ou empresa).
+- Permitir login e autenticação (Firebase Auth, Google Sign-In).
+- Exibir e gerenciar produtos locais (cadastro, listagem, detalhes).
+- Mostrar localização dos estabelecimentos no mapa (Google Maps/Places).
+- Permitir contato via WhatsApp entre compradores e empresas.
+- Gerar estatísticas internas para empresas sobre visualizações de produtos, cliques em WhatsApp e abertura de rotas.
+- Melhorar a experiência de uso, incluindo personalização de tema (claro/escuro) e ajustes de interface.
+- Cumprir obrigações legais ou responder a requisições de autoridades, quando necessário.
+
+Não utilizamos seus dados para envio de spam ou venda a terceiros.
+
+5. Compartilhamento de dados
+
+Podemos compartilhar dados:
+
+- Com os serviços do Google (Firebase, Google Sign-In, Maps) estritamente para as finalidades descritas.
+- Com empresas parceiras, quando você interage com elas no app (por exemplo, ao visualizar um produto ou clicar em “Contatar via WhatsApp”, a empresa saberá que houve um contato).
+- Com autoridades públicas, quando houver obrigação legal.
+
+Não comercializamos dados pessoais com terceiros para fins de marketing independente.
+
+6. Segurança e armazenamento
+
+- Os dados são armazenados em serviços do Firebase em data centers do Google.
+- Utilizamos autenticação segura, criptografia em trânsito (HTTPS) e regras de segurança no Firestore e Storage para limitar o acesso:
+  - Cada usuário só acessa seus próprios dados de conta.
+  - Cada empresa só cria/edita produtos próprios.
+  - Imagens de produtos são públicas apenas para fins de exibição no app.
+- Apesar dos esforços, nenhum sistema é 100% seguro. Em caso de incidente de segurança relevante, notificaremos os usuários afetados, quando exigido pela legislação aplicável.
+
+7. Seus direitos
+
+De acordo com a legislação aplicável (como a LGPD no Brasil), você tem, entre outros, os seguintes direitos:
+
+- Acesso: saber quais dados seus são tratados.
+- Correção: solicitar correção de dados incompletos, inexatos ou desatualizados.
+- Exclusão: solicitar exclusão da sua conta e de dados pessoais, quando não houver obrigação legal de mantê-los.
+- Revogação de consentimento: quando o tratamento se basear em consentimento.
+
+Para exercer seus direitos, entre em contato pelo email: [seu email de contato].
+
+8. Retenção de dados
+
+- Mantemos seus dados pessoais enquanto sua conta estiver ativa.
+- Podem ser mantidos por período adicional para:
+  - Cumprimento de obrigações legais,
+  - Resolução de disputas,
+  - Proteção de direitos do aplicativo e de terceiros.
+
+Quando não forem mais necessários, os dados são eliminados ou anonimizados.
+
+9. Uso por menores de idade
+
+O Descontaí não é direcionado a menores de 18 anos.
+Se identificarmos o cadastro de menor de idade sem autorização adequada, poderemos remover a conta e os dados associados.
+
+10. Alterações nesta Política
+
+Esta Política de Privacidade pode ser atualizada periodicamente.
+
+- A versão vigente estará sempre disponível dentro do app ou em página própria.
+- Mudanças relevantes poderão ser comunicadas por meio de aviso no app ou por email.
+
+11. Contato
+
+Se tiver dúvidas, solicitações ou reclamações sobre esta Política ou sobre o tratamento dos seus dados pessoais, entre em contato:
+
+- Email: [seu email de contato]
+- Responsável pelo tratamento de dados: [seu nome ou o da empresa]
+
