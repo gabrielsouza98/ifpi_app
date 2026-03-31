@@ -50,3 +50,10 @@ build/
 .vscode/
 *.iml
 pubspec.lock
+
+# Sensitive local secrets (never commit)
+android/key.properties
+android/keystores/*.jks
+functions/.env
+functions/node_modules/
+functions/package-lock.json

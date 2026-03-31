@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import '../theme/premium_theme.dart';
 
 class ThemeService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  StreamSubscription<User?>? _authSub;
   
   ThemeMode _themeModeEmpresa = ThemeMode.dark;
   ThemeMode _themeModeUsuario = ThemeMode.dark;
@@ -25,7 +27,32 @@ class ThemeService extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   ThemeService() {
+    // Garante:
+    // - Tema é carregado automaticamente ao logar (inclusive sessão persistida).
+    // - Ao deslogar, tema volta imediatamente para o padrão (escuro).
+    _authSub = _auth.authStateChanges().listen((user) {
+      if (user == null) {
+        _setLoggedOutTheme();
+      } else {
+        _loadTheme();
+      }
+    });
+    // Estado inicial (caso já exista sessão)
     _loadTheme();
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
+
+  void _setLoggedOutTheme() {
+    _isLoading = false;
+    _currentUserType = null;
+    _themeModeEmpresa = ThemeMode.dark;
+    _themeModeUsuario = ThemeMode.dark;
+    notifyListeners();
   }
 
   Future<void> _loadTheme() async {
@@ -39,7 +66,8 @@ class ThemeService extends ChangeNotifier {
         final empresaDoc = await _firestore
             .collection('empresas')
             .doc(user.uid)
-            .get();
+            .get()
+            .timeout(const Duration(seconds: 10));
 
         if (empresaDoc.exists) {
           _currentUserType = 'empresa';
@@ -56,7 +84,8 @@ class ThemeService extends ChangeNotifier {
           final usuarioDoc = await _firestore
               .collection('usuarios')
               .doc(user.uid)
-              .get();
+              .get()
+              .timeout(const Duration(seconds: 10));
 
           if (usuarioDoc.exists) {
             _currentUserType = 'usuario';
@@ -68,6 +97,9 @@ class ThemeService extends ChangeNotifier {
             } else {
               _themeModeUsuario = ThemeMode.dark;
             }
+          } else {
+            // Se não encontrou doc de usuário nem de empresa, mantém app em modo padrão (escuro)
+            _currentUserType = null;
           }
         }
       }

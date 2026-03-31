@@ -1,4 +1,4 @@
-package com.example.app_ifpi
+package com.ifpi.descontai.app
 
 import io.flutter.embedding.android.FlutterActivity
 

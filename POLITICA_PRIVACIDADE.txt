@@ -21,7 +21,7 @@ Se você for pessoa jurídica (empresa dona do app), inclua também: razão soci
 Compradores (usuários):
 - Nome
 - Email
-- Senha (armazenada de forma criptografada pelo Firebase Authentication)
+- Senha (armazenada de forma criptografada pelo   Firebase Authentication)
 - Foto de perfil (quando login com Google, se disponível)
 - Preferências de tema (claro/escuro)
 

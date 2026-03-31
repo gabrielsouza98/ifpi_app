@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:async';
 import 'services/auth_service.dart';
 import 'services/geocoding_service.dart';
 import 'theme/premium_theme.dart';
@@ -292,9 +293,14 @@ class _UsuarioCriarContaScreenState extends State<UsuarioCriarContaScreen> {
                                 }
                               } catch (e) {
                                 if (mounted) {
+                                  final detail = e is String
+                                      ? e
+                                      : 'Não foi possível criar sua conta. Tente novamente em instantes.';
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(e.toString()),
+                                      content: Text(
+                                        'Ops, algo deu errado.\n$detail',
+                                      ),
                                       backgroundColor: PremiumTheme.errorColor,
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(
@@ -382,9 +388,12 @@ class _EmpresaCriarContaScreenState extends State<EmpresaCriarContaScreen> {
   double? _latitude;
   double? _longitude;
   String? _enderecoCompleto;
+  Timer? _enderecoBuscaDebounce;
+  int _enderecoBuscaToken = 0;
 
   @override
   void dispose() {
+    _enderecoBuscaDebounce?.cancel();
     _nomeEmpresaController.dispose();
     _cnpjController.dispose();
     _emailController.dispose();
@@ -395,7 +404,24 @@ class _EmpresaCriarContaScreenState extends State<EmpresaCriarContaScreen> {
     super.dispose();
   }
 
+  void _agendarBuscaEnderecos(String query) {
+    _enderecoBuscaDebounce?.cancel();
+
+    if (query.length < 3) {
+      setState(() {
+        _sugestoesEndereco = [];
+        _buscandoEndereco = false;
+      });
+      return;
+    }
+
+    _enderecoBuscaDebounce = Timer(const Duration(milliseconds: 350), () {
+      _buscarEnderecos(query);
+    });
+  }
+
   Future<void> _buscarEnderecos(String query) async {
+    final int token = ++_enderecoBuscaToken;
     if (query.length < 3) {
       setState(() {
         _sugestoesEndereco = [];
@@ -409,17 +435,30 @@ class _EmpresaCriarContaScreenState extends State<EmpresaCriarContaScreen> {
 
     try {
       final sugestoes = await GeocodingService.buscarEnderecos(query);
-      if (mounted) {
+      if (mounted && token == _enderecoBuscaToken && _enderecoController.text == query) {
         setState(() {
           _sugestoesEndereco = sugestoes;
           _buscandoEndereco = false;
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && token == _enderecoBuscaToken) {
         setState(() {
           _buscandoEndereco = false;
+          _sugestoesEndereco = [];
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ops, algo deu errado.\nNão foi possível buscar endereços. ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+            backgroundColor: PremiumTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     }
   }
@@ -786,7 +825,7 @@ class _EmpresaCriarContaScreenState extends State<EmpresaCriarContaScreen> {
                                         : null,
                               ),
                               onChanged: (value) {
-                                _buscarEnderecos(value);
+                                _agendarBuscaEnderecos(value);
                                 if (value.isEmpty) {
                                   setState(() {
                                     _latitude = null;
@@ -936,9 +975,14 @@ class _EmpresaCriarContaScreenState extends State<EmpresaCriarContaScreen> {
                                 }
                               } catch (e) {
                                 if (mounted) {
+                                  final detail = e is String
+                                      ? e
+                                      : 'Não foi possível criar sua conta. Tente novamente em instantes.';
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(e.toString()),
+                                      content: Text(
+                                        'Ops, algo deu errado.\n$detail',
+                                      ),
                                       backgroundColor: PremiumTheme.errorColor,
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(
@@ -1157,7 +1201,9 @@ class _UsuarioEsqueciSenhaScreenState extends State<UsuarioEsqueciSenhaScreen> {
                             if (_formKey.currentState!.validate()) {
                               setState(() => _isLoading = true);
                               try {
-                                await _authService.resetPassword(_emailController.text.trim());
+                                await _authService.resetPassword(
+                                  _emailController.text.trim(),
+                                );
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -1173,9 +1219,14 @@ class _UsuarioEsqueciSenhaScreenState extends State<UsuarioEsqueciSenhaScreen> {
                                 }
                               } catch (e) {
                                 if (mounted) {
+                                  final detail = e is String
+                                      ? e
+                                      : 'Não foi possível enviar o email de recuperação. Tente novamente em alguns instantes.';
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(e.toString()),
+                                      content: Text(
+                                        'Ops, algo deu errado.\n$detail',
+                                      ),
                                       backgroundColor: PremiumTheme.errorColor,
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(
@@ -1394,7 +1445,9 @@ class _EmpresaEsqueciSenhaScreenState extends State<EmpresaEsqueciSenhaScreen> {
                             if (_formKey.currentState!.validate()) {
                               setState(() => _isLoading = true);
                               try {
-                                await _authService.resetPassword(_emailController.text.trim());
+                                await _authService.resetPassword(
+                                  _emailController.text.trim(),
+                                );
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -1410,9 +1463,14 @@ class _EmpresaEsqueciSenhaScreenState extends State<EmpresaEsqueciSenhaScreen> {
                                 }
                               } catch (e) {
                                 if (mounted) {
+                                  final detail = e is String
+                                      ? e
+                                      : 'Não foi possível enviar o email de recuperação. Tente novamente em alguns instantes.';
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(e.toString()),
+                                      content: Text(
+                                        'Ops, algo deu errado.\n$detail',
+                                      ),
                                       backgroundColor: PremiumTheme.errorColor,
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(

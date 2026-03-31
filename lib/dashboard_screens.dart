@@ -4,12 +4,11 @@ import 'services/auth_service.dart';
 import 'services/produto_service.dart';
 import 'usuario_produto_detalhes.dart';
 import 'theme/premium_theme.dart';
-import 'widgets/premium_button.dart';
 import 'widgets/premium_background.dart';
 
 // Dashboard do Usuário (Home com busca, categorias e lista de produtos)
 class UsuarioDashboardScreen extends StatefulWidget {
-  UsuarioDashboardScreen({super.key});
+  const UsuarioDashboardScreen({super.key});
 
   @override
   State<UsuarioDashboardScreen> createState() => _UsuarioDashboardScreenState();
@@ -20,6 +19,7 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
   final ProdutoService _produtoService = ProdutoService();
 
   final TextEditingController _searchController = TextEditingController();
+  bool _checandoTipoUsuario = true;
 
   /// Mesma lista de categorias do cadastro de produtos (empresa)
   static const List<String> _categories = <String>[
@@ -63,6 +63,42 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Garante que apenas contas do tipo "usuario" acessem este dashboard
+    Future.microtask(_validarTipoUsuario);
+  }
+
+  Future<void> _validarTipoUsuario() async {
+    try {
+      final bool isUsuario = await _authService.isUsuario();
+      if (!mounted) return;
+      if (!isUsuario) {
+        await _authService.signOut();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Este acesso é exclusivo para compradores. Entre com uma conta de comprador.',
+            ),
+            backgroundColor: PremiumTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      } else {
+        setState(() => _checandoTipoUsuario = false);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _checandoTipoUsuario = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = PremiumTheme.getTextPrimary(isDark);
@@ -100,7 +136,13 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
       ),
       body: PremiumBackground(
         child: SafeArea(
-          child: Column(
+          child: _checandoTipoUsuario
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: PremiumTheme.primaryColor,
+                  ),
+                )
+              : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
@@ -108,25 +150,56 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Olá, bem-vindo',
-                      style: PremiumTheme.headlineSmall.copyWith(
-                        color: textPrimary,
-                      ),
-                    )
-                        .animate()
-                        .fadeIn(duration: 600.ms, delay: 200.ms)
-                        .slideX(begin: -0.1, end: 0, duration: 600.ms, delay: 200.ms),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Explore ofertas exclusivas e encontre os melhores preços',
-                      style: PremiumTheme.bodyLarge.copyWith(
-                        color: PremiumTheme.getTextSecondary(isDark),
-                      ),
-                    )
-                        .animate()
-                        .fadeIn(duration: 600.ms, delay: 400.ms)
-                        .slideX(begin: -0.1, end: 0, duration: 600.ms, delay: 400.ms),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipOval(
+                          child: Image.asset(
+                            'assets/images/usuario.png',
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Olá, bem-vindo',
+                                style: PremiumTheme.headlineSmall.copyWith(
+                                  color: textPrimary,
+                                ),
+                              )
+                                  .animate()
+                                  .fadeIn(duration: 600.ms, delay: 200.ms)
+                                  .slideX(
+                                    begin: -0.1,
+                                    end: 0,
+                                    duration: 600.ms,
+                                    delay: 200.ms,
+                                  ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Explore ofertas exclusivas e encontre os melhores preços',
+                                style: PremiumTheme.bodyLarge.copyWith(
+                                  color: PremiumTheme.getTextSecondary(isDark),
+                                ),
+                              )
+                                  .animate()
+                                  .fadeIn(duration: 600.ms, delay: 400.ms)
+                                  .slideX(
+                                    begin: -0.1,
+                                    end: 0,
+                                    duration: 600.ms,
+                                    delay: 400.ms,
+                                  ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 20),
                     _buildSearchField(context)
                         .animate()
@@ -171,11 +244,31 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
                       }
                       if (snapshot.hasError) {
                         return Center(
-                          child: Text(
-                            'Erro ao carregar produtos',
-                            style: PremiumTheme.bodyLarge.copyWith(
-                              color: PremiumTheme.errorColor,
-                            ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline_rounded,
+                                size: 56,
+                                color: PremiumTheme.errorColor,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Ops, algo deu errado.',
+                                style: PremiumTheme.bodyLarge.copyWith(
+                                  color: PremiumTheme.errorColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Não foi possível carregar os produtos. Tente novamente em alguns instantes.',
+                                style: PremiumTheme.bodyMedium.copyWith(
+                                  color: PremiumTheme.getTextSecondary(isDark),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         );
                       }
@@ -339,59 +432,6 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
     );
   }
 
-  Widget _buildProductCard(BuildContext context, _ProductItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(item.icon, size: 28, color: Colors.grey.shade800),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey.shade900,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'R\$ ${item.price.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildProdutoCardFromModel(BuildContext context, Produto item) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = PremiumTheme.getTextPrimary(isDark);
@@ -522,25 +562,53 @@ class _UsuarioDashboardScreenState extends State<UsuarioDashboardScreen> {
   
 }
 
-class _ProductItem {
-  _ProductItem({
-    required this.name,
-    required this.price,
-    required this.category,
-    required this.icon,
-  });
+// Dashboard da Empresa
+class EmpresaDashboardScreen extends StatefulWidget {
+  const EmpresaDashboardScreen({super.key});
 
-  final String name;
-  final double price;
-  final String category;
-  final IconData icon;
+  @override
+  State<EmpresaDashboardScreen> createState() => _EmpresaDashboardScreenState();
 }
 
-// Dashboard da Empresa
-class EmpresaDashboardScreen extends StatelessWidget {
-  EmpresaDashboardScreen({super.key});
-
+class _EmpresaDashboardScreenState extends State<EmpresaDashboardScreen> {
   final AuthService _authService = AuthService();
+  bool _checandoTipoEmpresa = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Garante que apenas contas do tipo "empresa" acessem este dashboard
+    Future.microtask(_validarTipoEmpresa);
+  }
+
+  Future<void> _validarTipoEmpresa() async {
+    try {
+      final bool isEmpresa = await _authService.isEmpresa();
+      if (!mounted) return;
+      if (!isEmpresa) {
+        await _authService.signOut();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Este acesso é exclusivo para empresas. Entre com uma conta empresarial.',
+            ),
+            backgroundColor: PremiumTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      } else {
+        setState(() => _checandoTipoEmpresa = false);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _checandoTipoEmpresa = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -572,7 +640,13 @@ class EmpresaDashboardScreen extends StatelessWidget {
       ),
       body: PremiumBackground(
         child: SafeArea(
-          child: SingleChildScrollView(
+          child: _checandoTipoEmpresa
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: PremiumTheme.primaryColor,
+                  ),
+                )
+              : SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -600,10 +674,13 @@ class EmpresaDashboardScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.business_rounded,
-                          size: 36,
-                          color: textPrimary,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/empresa.png',
+                            width: 36,
+                            height: 36,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 20),
@@ -678,7 +755,7 @@ class EmpresaDashboardScreen extends StatelessWidget {
                       Icons.analytics_rounded,
                       PremiumTheme.secondaryColor,
                       () {
-                        Navigator.pushNamed(context, '/empresa/produtos');
+                        Navigator.pushNamed(context, '/empresa/analytics');
                       },
                       2,
                     ),

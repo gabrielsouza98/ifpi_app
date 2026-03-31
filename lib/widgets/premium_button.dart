@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/premium_theme.dart';
 
 /// Botão Premium com Glassmorphism e Microinterações
@@ -73,7 +72,6 @@ class _PremiumButtonState extends State<PremiumButton>
         onTapDown: (_) => _scaleController.forward(),
         onTapUp: (_) {
           _scaleController.reverse();
-          widget.onPressed?.call();
         },
         onTapCancel: () => _scaleController.reverse(),
         child: AnimatedBuilder(
@@ -88,7 +86,7 @@ class _PremiumButtonState extends State<PremiumButton>
                   gradient: gradient,
                   boxShadow: [
                     BoxShadow(
-                      color: (gradient.colors.first as Color).withOpacity(0.4),
+                      color: (gradient.colors.first).withOpacity(0.4),
                       blurRadius: _isHovering ? 25 : 15,
                       spreadRadius: _isHovering ? 2 : 0,
                       offset: Offset(0, _isHovering ? 8 : 4),

@@ -6,6 +6,7 @@ import 'services/auth_service.dart';
 import 'services/analytics_service.dart';
 import 'theme/premium_theme.dart';
 import 'widgets/premium_button.dart';
+import 'widgets/app_snackbar.dart';
 import 'widgets/premium_background.dart';
 
 class UsuarioProdutoDetalhesScreen extends StatefulWidget {
@@ -58,22 +59,14 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
 
   Future<void> _abrirWhatsApp() async {
     if (_empresaData == null || _empresaData!['whatsapp'] == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Número de WhatsApp não disponível'),
-          backgroundColor: PremiumTheme.errorColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      AppSnackBar.error(context, 'Numero de WhatsApp nao disponivel');
       return;
     }
 
     final whatsapp = _empresaData!['whatsapp'] as String;
-    final url = 'https://wa.me/55$whatsapp?text=Olá! Gostaria de saber mais sobre o produto: ${widget.produto.nome}';
-    
+    final url =
+        'https://wa.me/55$whatsapp?text=Ola! Gostaria de saber mais sobre o produto: ${widget.produto.nome}';
+
     try {
       setState(() => _abrindoWhatsApp = true);
       final uri = Uri.parse(url);
@@ -84,15 +77,9 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao abrir WhatsApp: $e'),
-            backgroundColor: PremiumTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        AppSnackBar.error(
+          context,
+          'Ops, algo deu errado.\nNao foi possivel abrir o WhatsApp. Tente novamente.',
         );
       }
     } finally {
@@ -101,28 +88,18 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
   }
 
   Future<void> _abrirGoogleMaps() async {
-    if (_empresaData == null || 
-        _empresaData!['latitude'] == null || 
+    if (_empresaData == null ||
+        _empresaData!['latitude'] == null ||
         _empresaData!['longitude'] == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Localização não disponível'),
-          backgroundColor: PremiumTheme.errorColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      AppSnackBar.error(context, 'Localizacao nao disponivel');
       return;
     }
 
     final lat = (_empresaData!['latitude'] as num).toDouble();
     final lng = (_empresaData!['longitude'] as num).toDouble();
-    
-    // URL do Google Maps com destino e opção de navegação
+
     final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving';
-    
+
     try {
       setState(() => _abrindoMaps = true);
       final uri = Uri.parse(url);
@@ -133,22 +110,15 @@ class _UsuarioProdutoDetalhesScreenState extends State<UsuarioProdutoDetalhesScr
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao abrir Google Maps: $e'),
-            backgroundColor: PremiumTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        AppSnackBar.error(
+          context,
+          'Ops, algo deu errado.\nNao foi possivel abrir o Google Maps. Tente novamente.',
         );
       }
     } finally {
       if (mounted) setState(() => _abrindoMaps = false);
     }
   }
-
   List<String> _buildImageList(Produto p) {
     if (p.imagensUrls.isNotEmpty) return p.imagensUrls;
     if (p.imagemUrl != null && p.imagemUrl!.isNotEmpty) return <String>[p.imagemUrl!];
@@ -463,7 +433,7 @@ class _GaleriaState extends State<_Galeria> {
       child: Column(
         children: [
           // Imagem principal
-          Container(
+          SizedBox(
             height: 300,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(

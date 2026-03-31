@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Tipos de evento de analytics por produto.
 enum TipoEventoAnalytics {
@@ -66,8 +67,15 @@ class ProdutoAnalytics {
   /// Busca analytics agregados e últimas datas para um produto.
   /// Usa apenas where (sem orderBy) para não exigir índice composto no Firestore.
   static Future<ProdutoAnalytics> getAnalyticsProduto(String produtoId) async {
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _col()
-        .where('produtoId', isEqualTo: produtoId)
+    final String? empresaIdAtual = FirebaseAuth.instance.currentUser?.uid;
+    final Query<Map<String, dynamic>> baseQuery = _col()
+        .where('produtoId', isEqualTo: produtoId);
+
+    // Para respeitar as regras de leitura, filtramos também por empresaId
+    // quando há um usuário autenticado (empresa logada).
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await (empresaIdAtual != null
+            ? baseQuery.where('empresaId', isEqualTo: empresaIdAtual)
+            : baseQuery)
         .limit(500)
         .get();
 
@@ -117,8 +125,15 @@ class ProdutoAnalytics {
   /// Stream de analytics do produto para atualização em tempo real na tela da empresa.
   /// Usa apenas where (sem orderBy) para não exigir índice composto.
   static Stream<ProdutoAnalytics> streamAnalyticsProduto(String produtoId) {
-    return _col()
-        .where('produtoId', isEqualTo: produtoId)
+    final String? empresaIdAtual = FirebaseAuth.instance.currentUser?.uid;
+    Query<Map<String, dynamic>> query = _col()
+        .where('produtoId', isEqualTo: produtoId);
+
+    if (empresaIdAtual != null) {
+      query = query.where('empresaId', isEqualTo: empresaIdAtual);
+    }
+
+    return query
         .limit(500)
         .snapshots()
         .map((QuerySnapshot<Map<String, dynamic>> snapshot) {

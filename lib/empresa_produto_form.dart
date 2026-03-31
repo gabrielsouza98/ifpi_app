@@ -519,7 +519,7 @@ class _EmpresaProdutoFormScreenState extends State<EmpresaProdutoFormScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Imagem ${f.name} maior que 5MB'),
+              content: Text('A imagem ${f.name} é grande demais (mais de 5MB). Escolha uma imagem menor.'),
               backgroundColor: PremiumTheme.errorColor,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -640,9 +640,12 @@ class _EmpresaProdutoFormScreenState extends State<EmpresaProdutoFormScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final detail = e is String
+            ? e
+            : 'Não foi possível salvar o produto. Verifique os dados e tente novamente.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro: ${e.toString()}'),
+            content: Text('Ops, algo deu errado.\n$detail'),
             backgroundColor: PremiumTheme.errorColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -656,40 +659,6 @@ class _EmpresaProdutoFormScreenState extends State<EmpresaProdutoFormScreen> {
     }
   }
 
-  void _showImagePreviewAt(int index) {
-    if (index < 0 || index >= _imageBytesList.length) return;
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          insetPadding: const EdgeInsets.all(16),
-          backgroundColor: Colors.black,
-          child: Stack(
-            children: [
-              InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 5,
-                child: Center(
-                  child: Image.memory(
-                    _imageBytesList[index],
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }
 
 

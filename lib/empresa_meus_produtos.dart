@@ -8,10 +8,16 @@ import 'widgets/premium_background.dart';
 import 'widgets/premium_button.dart';
 
 class EmpresaMeusProdutosScreen extends StatelessWidget {
-  EmpresaMeusProdutosScreen({super.key});
+  EmpresaMeusProdutosScreen({
+    super.key,
+    this.apenasVisualizar = false,
+    this.modoAnalytics = false,
+  });
 
   final ProdutoService _produtoService = ProdutoService();
   final AuthService _auth = AuthService();
+  final bool apenasVisualizar;
+  final bool modoAnalytics;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +30,7 @@ class EmpresaMeusProdutosScreen extends StatelessWidget {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Meus Produtos',
+          modoAnalytics ? 'Analytics dos Produtos' : 'Meus Produtos',
           style: PremiumTheme.titleLarge.copyWith(color: textPrimary),
         ),
         backgroundColor: Colors.transparent,
@@ -62,10 +68,19 @@ class EmpresaMeusProdutosScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Erro ao carregar produtos',
+                            'Ops, algo deu errado.',
                             style: PremiumTheme.bodyLarge.copyWith(
                               color: PremiumTheme.errorColor,
+                              fontWeight: FontWeight.w600,
                             ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Não foi possível carregar seus produtos. Atualize a página ou tente novamente em instantes.',
+                            style: PremiumTheme.bodyMedium.copyWith(
+                              color: PremiumTheme.getTextSecondary(isDark),
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
@@ -202,90 +217,95 @@ class EmpresaMeusProdutosScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                          trailing: IconButton(
-                            icon: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    PremiumTheme.errorColor,
-                                    PremiumTheme.errorColor.withOpacity(0.8),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.delete_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                            onPressed: () async {
-                              final bool? confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  backgroundColor: PremiumTheme.getSurfaceColor(isDark),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  title: Text(
-                                    'Confirmar exclusão',
-                                    style: PremiumTheme.titleLarge.copyWith(
-                                      color: textPrimary,
-                                    ),
-                                  ),
-                                  content: Text(
-                                    'Deseja realmente excluir este produto?',
-                                    style: PremiumTheme.bodyMedium.copyWith(
-                                      color: PremiumTheme.getTextSecondary(isDark),
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context, false),
-                                      child: Text(
-                                        'Cancelar',
-                                        style: TextStyle(color: PremiumTheme.getTextSecondary(isDark)),
-                                      ),
-                                    ),
-                                    PremiumButton(
-                                      label: 'Excluir',
-                                      icon: Icons.delete_rounded,
+                          trailing: (!apenasVisualizar && !modoAnalytics)
+                              ? IconButton(
+                                  icon: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
                                           PremiumTheme.errorColor,
                                           PremiumTheme.errorColor.withOpacity(0.8),
                                         ],
                                       ),
-                                      height: 40,
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      onPressed: () => Navigator.pop(context, true),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                  ],
-                                ),
-                              );
-                              if (confirm == true) {
-                                await _produtoService.deletarProduto(p.id);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Text('Produto excluído com sucesso'),
-                                      backgroundColor: PremiumTheme.successColor,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                    child: const Icon(
+                                      Icons.delete_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    final bool? confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        backgroundColor: PremiumTheme.getSurfaceColor(isDark),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        title: Text(
+                                          'Confirmar exclusão',
+                                          style: PremiumTheme.titleLarge.copyWith(
+                                            color: textPrimary,
+                                          ),
+                                        ),
+                                        content: Text(
+                                          'Deseja realmente excluir este produto?',
+                                          style: PremiumTheme.bodyMedium.copyWith(
+                                            color: PremiumTheme.getTextSecondary(isDark),
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, false),
+                                            child: Text(
+                                              'Cancelar',
+                                              style: TextStyle(color: PremiumTheme.getTextSecondary(isDark)),
+                                            ),
+                                          ),
+                                          PremiumButton(
+                                            label: 'Excluir',
+                                            icon: Icons.delete_rounded,
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                PremiumTheme.errorColor,
+                                                PremiumTheme.errorColor.withOpacity(0.8),
+                                              ],
+                                            ),
+                                            height: 40,
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                            onPressed: () => Navigator.pop(context, true),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                          ),
+                                    );
+                                    if (confirm == true) {
+                                      await _produtoService.deletarProduto(p.id);
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: const Text('Produto excluído com sucesso'),
+                                            backgroundColor: PremiumTheme.successColor,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                )
+                              : null,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (BuildContext context) =>
-                                    EmpresaProdutoDetalhesScreen(produto: p),
+                                builder: (BuildContext context) => EmpresaProdutoDetalhesScreen(
+                                  produto: p,
+                                  mostrarAnalytics: modoAnalytics,
+                                  permitirEdicao: !modoAnalytics,
+                                ),
                               ),
                             );
                           },

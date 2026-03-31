@@ -12,9 +12,11 @@ class AuthService {
           scopes: const ['email', 'profile'],
         )
       : GoogleSignIn(
-          clientId: '560636982577-6f74592625a48a8789ac10.apps.googleusercontent.com',
           scopes: const ['email', 'profile'],
-          serverClientId: '560636982577-6f74592625a48a8789ac10.apps.googleusercontent.com',
+          // Cliente Web (type 3) do Firebase, usado para emitir o ID token
+          // aceito pelo Firebase Auth no Android.
+          serverClientId:
+              '560636982577-fqbtomhsojqde2lf7ild99gohbef1qmq.apps.googleusercontent.com',
         );
 
   // Stream do usuário atual
@@ -195,11 +197,16 @@ class AuthService {
             .update(updateData);
       }
     } catch (e) {
-      throw Exception('Erro ao atualizar dados: ${e.toString()}');
+      throw Exception('Não foi possível atualizar os dados da empresa. Tente novamente em alguns instantes.');
     }
   }
 
-  // Recuperação de senha
+  // Recuperação de senha (genérico).
+  // Importante: quando o usuário está deslogado, as regras do Firestore
+  // não permitem fazer consultas para verificar tipo de conta.
+  // Por isso, a validação é feita apenas pelo Firebase Auth:
+  // - Se o email não existir em nenhuma conta -> Firebase retorna user-not-found.
+  // - A mensagem exibida nas telas orienta o usuário sobre tipo de conta.
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -219,29 +226,40 @@ class AuthService {
   // Login com Google para Usuário
   Future<UserCredential?> signInWithGoogleUsuario() async {
     try {
-      // Primeiro, tentar fazer login silencioso
-      GoogleSignInAccount? googleUser = await _googleSignIn.signInSilently();
-      
-      // Se não conseguir login silencioso, fazer login normal
-      if (googleUser == null) {
-        googleUser = await _googleSignIn.signIn();
+      UserCredential result;
+
+      if (kIsWeb) {
+        // No Web, usar diretamente o Firebase Auth com o provedor Google,
+        // pois o plugin google_sign_in para web está migrando para FedCM
+        // e o método signIn tradicional é desaconselhado.
+        final googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+
+        result = await _auth.signInWithPopup(googleProvider);
+      } else {
+        // Primeiro, tentar fazer login silencioso
+        GoogleSignInAccount? googleUser = await _googleSignIn.signInSilently();
+        
+        // Se não conseguir login silencioso, fazer login normal
+        googleUser ??= await _googleSignIn.signIn();
+        
+        if (googleUser == null) {
+          return null; // Usuário cancelou o login
+        }
+
+        // Obter os dados de autenticação do Google
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+        // Criar credencial do Firebase a partir das credenciais do Google
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        // Login no Firebase com as credenciais do Google
+        result = await _auth.signInWithCredential(credential);
       }
-      
-      if (googleUser == null) {
-        return null; // Usuário cancelou o login
-      }
-
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // Create a new credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in to Firebase with the Google credential
-      UserCredential result = await _auth.signInWithCredential(credential);
 
       // Verificar se o usuário já existe na coleção de usuários
       DocumentSnapshot userDoc = await _firestore
@@ -264,44 +282,63 @@ class AuthService {
         Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
         if (userData['tipo'] != 'usuario') {
           await _auth.signOut();
-          await _googleSignIn.signOut();
+          if (!kIsWeb) {
+            await _googleSignIn.signOut();
+          }
           throw Exception('Este login é apenas para usuários');
         }
       }
 
       return result;
+    } on FirebaseAuthException catch (e) {
+      if (!kIsWeb) {
+        await _googleSignIn.signOut();
+      }
+      // Traduz erros do Firebase Auth para mensagens amigáveis em português
+      throw Exception(_handleAuthException(e));
     } catch (e) {
-      await _googleSignIn.signOut();
-      throw Exception('Erro no login com Google: ${e.toString()}');
+      if (!kIsWeb) {
+        await _googleSignIn.signOut();
+      }
+      throw Exception('Não foi possível concluir o login com Google. Tente novamente em alguns instantes.');
     }
   }
 
   // Login com Google para Empresa
   Future<UserCredential?> signInWithGoogleEmpresa() async {
     try {
-      // Primeiro, tentar fazer login silencioso
-      GoogleSignInAccount? googleUser = await _googleSignIn.signInSilently();
-      
-      // Se não conseguir login silencioso, fazer login normal
-      if (googleUser == null) {
-        googleUser = await _googleSignIn.signIn();
+      UserCredential result;
+
+      if (kIsWeb) {
+        // No Web, usar diretamente o Firebase Auth com o provedor Google
+        final googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+
+        result = await _auth.signInWithPopup(googleProvider);
+      } else {
+        // Primeiro, tentar fazer login silencioso
+        GoogleSignInAccount? googleUser = await _googleSignIn.signInSilently();
+        
+        // Se não conseguir login silencioso, fazer login normal
+        googleUser ??= await _googleSignIn.signIn();
+        
+        if (googleUser == null) {
+          return null; // Usuário cancelou o login
+        }
+
+        // Obter os dados de autenticação do Google
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+        // Criar credencial do Firebase a partir das credenciais do Google
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        // Login no Firebase com as credenciais do Google
+        result = await _auth.signInWithCredential(credential);
       }
-      
-      if (googleUser == null) {
-        return null; // Usuário cancelou o login
-      }
-
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // Create a new credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in to Firebase with the Google credential
-      UserCredential result = await _auth.signInWithCredential(credential);
 
       // Verificar se o usuário já existe na coleção de empresas
       DocumentSnapshot userDoc = await _firestore
@@ -324,15 +361,25 @@ class AuthService {
         Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
         if (userData['tipo'] != 'empresa') {
           await _auth.signOut();
-          await _googleSignIn.signOut();
+          if (!kIsWeb) {
+            await _googleSignIn.signOut();
+          }
           throw Exception('Este login é apenas para empresas');
         }
       }
 
       return result;
+    } on FirebaseAuthException catch (e) {
+      if (!kIsWeb) {
+        await _googleSignIn.signOut();
+      }
+      // Traduz erros do Firebase Auth para mensagens amigáveis em português
+      throw Exception(_handleAuthException(e));
     } catch (e) {
-      await _googleSignIn.signOut();
-      throw Exception('Erro no login com Google: ${e.toString()}');
+      if (!kIsWeb) {
+        await _googleSignIn.signOut();
+      }
+      throw Exception('Não foi possível concluir o login com Google. Tente novamente em alguns instantes.');
     }
   }
 
@@ -340,24 +387,32 @@ class AuthService {
   Future<bool> isUsuario() async {
     if (currentUser == null) return false;
     
-    DocumentSnapshot userDoc = await _firestore
-        .collection('usuarios')
-        .doc(currentUser!.uid)
-        .get();
-    
-    return userDoc.exists;
+    try {
+      final userDoc = await _firestore
+          .collection('usuarios')
+          .doc(currentUser!.uid)
+          .get()
+          .timeout(const Duration(seconds: 10));
+      return userDoc.exists;
+    } catch (_) {
+      return false;
+    }
   }
 
   // Verificar se é empresa
   Future<bool> isEmpresa() async {
     if (currentUser == null) return false;
     
-    DocumentSnapshot userDoc = await _firestore
-        .collection('empresas')
-        .doc(currentUser!.uid)
-        .get();
-    
-    return userDoc.exists;
+    try {
+      final userDoc = await _firestore
+          .collection('empresas')
+          .doc(currentUser!.uid)
+          .get()
+          .timeout(const Duration(seconds: 10));
+      return userDoc.exists;
+    } catch (_) {
+      return false;
+    }
   }
 
   // Obter dados do usuário
@@ -407,6 +462,16 @@ class AuthService {
 
   // Tratamento de exceções do Firebase Auth
   String _handleAuthException(FirebaseAuthException e) {
+    final message = e.message?.toLowerCase() ?? '';
+
+    if (message.contains('identitytoolkit')
+        || message.contains('signinwithpassword')
+        || message.contains('requests to this api')
+        || message.contains('are blocked')) {
+      return 'O login foi bloqueado pela configuracao da chave do Firebase no Android. '
+          'Verifique as restricoes da API key no Google Cloud/Firebase Console.';
+    }
+
     switch (e.code) {
       case 'user-not-found':
         return 'Nenhum usuário encontrado com este email.';
@@ -424,8 +489,14 @@ class AuthService {
         return 'Muitas tentativas. Tente novamente mais tarde.';
       case 'operation-not-allowed':
         return 'Operação não permitida.';
+      case 'invalid-credential':
+      case 'invalid-verification-code':
+      case 'invalid-verification-id':
+        return 'Não foi possível validar a credencial de acesso. Tente fazer login novamente.';
       default:
-        return 'Erro de autenticação: ${e.message}';
+        // Mensagem genérica em português, mas incluindo o código do FirebaseAuth
+        // para facilitar diagnóstico (debug).
+        return 'Não foi possível concluir a autenticação (${e.code}). Tente novamente em alguns instantes.';
     }
   }
 }

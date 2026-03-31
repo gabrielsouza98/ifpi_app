@@ -29,5 +29,8 @@
   },
   "dataconnect": {
     "source": "dataconnect"
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }

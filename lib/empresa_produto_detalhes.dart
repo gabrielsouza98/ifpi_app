@@ -7,9 +7,16 @@ import 'widgets/premium_button.dart';
 import 'widgets/premium_background.dart';
 
 class EmpresaProdutoDetalhesScreen extends StatefulWidget {
-  const EmpresaProdutoDetalhesScreen({super.key, required this.produto});
+  const EmpresaProdutoDetalhesScreen({
+    super.key,
+    required this.produto,
+    this.mostrarAnalytics = true,
+    this.permitirEdicao = true,
+  });
 
   final Produto produto;
+  final bool mostrarAnalytics;
+  final bool permitirEdicao;
 
   @override
   State<EmpresaProdutoDetalhesScreen> createState() =>
@@ -48,39 +55,41 @@ class _EmpresaProdutoDetalhesScreenState
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: PremiumTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.edit_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            onPressed: () async {
-              final resultado = await Navigator.of(context)
-                  .pushNamed('/produto/editar', arguments: produto);
+        actions: widget.permitirEdicao
+            ? [
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: PremiumTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  onPressed: () async {
+                    final resultado = await Navigator.of(context)
+                        .pushNamed('/produto/editar', arguments: produto);
 
-              if (resultado is Produto && mounted) {
-                setState(() {
-                  produto = resultado;
-                });
-              }
-            },
-          ),
-        ],
+                    if (resultado is Produto && mounted) {
+                      setState(() {
+                        produto = resultado;
+                      });
+                    }
+                  },
+                ),
+              ]
+            : null,
       ),
       body: PremiumBackground(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+            children: [
               // Galeria de imagens principal
           if (imagens.isNotEmpty)
                 _Galeria(imagens: imagens)
@@ -115,8 +124,8 @@ class _EmpresaProdutoDetalhesScreenState
                     .fadeIn(duration: 600.ms, delay: 200.ms)
                     .scale(delay: 200.ms, duration: 600.ms, begin: const Offset(0.95, 0.95)),
               
-              // Informações do produto
-              Padding(
+            // Informações do produto
+            Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,7 +222,7 @@ class _EmpresaProdutoDetalhesScreenState
                     const SizedBox(height: 24),
                     
                     // Descrição
-          Text(
+                    Text(
                       'Descrição',
                       style: PremiumTheme.titleLarge.copyWith(
                         color: textPrimary,
@@ -228,9 +237,9 @@ class _EmpresaProdutoDetalhesScreenState
                       padding: const EdgeInsets.all(20),
                       decoration: PremiumTheme.glassmorphism(borderRadius: 20, context: context),
                       child: Text(
-            (produto.descricao == null || produto.descricao!.trim().isEmpty)
+                        (produto.descricao == null || produto.descricao!.trim().isEmpty)
                             ? 'Este produto não possui descrição.'
-                : produto.descricao!,
+                            : produto.descricao!,
                         style: PremiumTheme.bodyLarge.copyWith(
                           color: PremiumTheme.getTextSecondary(isDark),
                           height: 1.6,
@@ -244,93 +253,95 @@ class _EmpresaProdutoDetalhesScreenState
                     const SizedBox(height: 32),
                     
                     // Seção Analytics
-                    _SecaoAnalytics(produtoId: produto.id)
-                        .animate()
-                        .fadeIn(duration: 600.ms, delay: 850.ms)
-                        .slideY(begin: 0.1, end: 0, duration: 600.ms, delay: 850.ms),
+                    if (widget.mostrarAnalytics)
+                      _SecaoAnalytics(produtoId: produto.id)
+                          .animate()
+                          .fadeIn(duration: 600.ms, delay: 850.ms)
+                          .slideY(begin: 0.1, end: 0, duration: 600.ms, delay: 850.ms),
                     
-                    const SizedBox(height: 32),
+                    if (widget.mostrarAnalytics) const SizedBox(height: 32),
                     
-                    // Botão de exclusão
-                    PremiumButton(
-                      label: 'Excluir produto',
-                      icon: Icons.delete_rounded,
-                      gradient: LinearGradient(
-                        colors: [
-                          PremiumTheme.errorColor,
-                          PremiumTheme.errorColor.withOpacity(0.8),
-                        ],
-                      ),
-            onPressed: () async {
-              final bool? confirmar = await showDialog<bool>(
-                context: context,
-                builder: (BuildContext context) {
-                  final isDark = Theme.of(context).brightness == Brightness.dark;
-                  final textPrimary = PremiumTheme.getTextPrimary(isDark);
-                  
-                  return AlertDialog(
-                              backgroundColor: PremiumTheme.getSurfaceColor(isDark),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              title: Text(
-                                'Confirmar exclusão',
-                                style: PremiumTheme.titleLarge.copyWith(
-                                  color: textPrimary,
-                                ),
-                              ),
-                              content: Text(
-                                'Esta ação não pode ser desfeita. Deseja realmente excluir este produto?',
-                                style: PremiumTheme.bodyMedium.copyWith(
-                                  color: PremiumTheme.getTextSecondary(isDark),
-                                ),
-                              ),
-                    actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: Text(
-                                    'Cancelar',
-                                    style: TextStyle(color: PremiumTheme.getTextSecondary(isDark)),
-                                  ),
-                                ),
-                                PremiumButton(
-                                  label: 'Excluir',
-                                  icon: Icons.delete_rounded,
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      PremiumTheme.errorColor,
-                                      PremiumTheme.errorColor.withOpacity(0.8),
-                                    ],
-                                  ),
-                                  height: 40,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  onPressed: () => Navigator.pop(context, true),
-                                ),
-                    ],
-                  );
-                },
-              );
-              if (confirmar == true) {
-                await ProdutoService().deletarProduto(produto.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Produto excluído com sucesso'),
-                                backgroundColor: PremiumTheme.successColor,
-                                behavior: SnackBarBehavior.floating,
+                    // Botão de exclusão (apenas quando edição é permitida)
+                    if (widget.permitirEdicao)
+                      PremiumButton(
+                        label: 'Excluir produto',
+                        icon: Icons.delete_rounded,
+                        gradient: LinearGradient(
+                          colors: [
+                            PremiumTheme.errorColor,
+                            PremiumTheme.errorColor.withOpacity(0.8),
+                          ],
+                        ),
+                        onPressed: () async {
+                          final bool? confirmar = await showDialog<bool>(
+                            context: context,
+                            builder: (BuildContext dialogContext) {
+                              final isDarkDialog = Theme.of(dialogContext).brightness == Brightness.dark;
+                              final textPrimaryDialog = PremiumTheme.getTextPrimary(isDarkDialog);
+                              
+                              return AlertDialog(
+                                backgroundColor: PremiumTheme.getSurfaceColor(isDarkDialog),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(24),
                                 ),
-                              ),
-                            );
-                            Navigator.pop(context);
+                                title: Text(
+                                  'Confirmar exclusão',
+                                  style: PremiumTheme.titleLarge.copyWith(
+                                    color: textPrimaryDialog,
+                                  ),
+                                ),
+                                content: Text(
+                                  'Esta ação não pode ser desfeita. Deseja realmente excluir este produto?',
+                                  style: PremiumTheme.bodyMedium.copyWith(
+                                    color: PremiumTheme.getTextSecondary(isDarkDialog),
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dialogContext, false),
+                                    child: Text(
+                                      'Cancelar',
+                                      style: TextStyle(color: PremiumTheme.getTextSecondary(isDarkDialog)),
+                                    ),
+                                  ),
+                                  PremiumButton(
+                                    label: 'Excluir',
+                                    icon: Icons.delete_rounded,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        PremiumTheme.errorColor,
+                                        PremiumTheme.errorColor.withOpacity(0.8),
+                                      ],
+                                    ),
+                                    height: 40,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    onPressed: () => Navigator.pop(dialogContext, true),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          if (confirmar == true) {
+                            await ProdutoService().deletarProduto(produto.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Produto excluído com sucesso'),
+                                  backgroundColor: PremiumTheme.successColor,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                              Navigator.pop(context);
+                            }
                           }
-                        }
-                      },
-                    )
-                        .animate()
-                        .fadeIn(duration: 600.ms, delay: 900.ms)
-                        .slideY(begin: 0.2, end: 0, duration: 600.ms, delay: 900.ms),
+                        },
+                      )
+                          .animate()
+                          .fadeIn(duration: 600.ms, delay: 900.ms)
+                          .slideY(begin: 0.2, end: 0, duration: 600.ms, delay: 900.ms),
                   ],
                 ),
               ),
@@ -568,7 +579,6 @@ class _CardMetrica extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary = PremiumTheme.getTextSecondary(isDark);
     final textTertiary = PremiumTheme.getTextTertiary(isDark);
 
     return Container(
@@ -659,7 +669,7 @@ class _GaleriaState extends State<_Galeria> {
       child: Column(
         children: [
           // Imagem principal
-          Container(
+          SizedBox(
             height: 300,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(

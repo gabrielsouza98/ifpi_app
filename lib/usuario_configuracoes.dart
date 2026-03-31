@@ -6,6 +6,7 @@ import 'services/auth_service.dart';
 import 'services/theme_service.dart';
 import 'theme/premium_theme.dart';
 import 'widgets/premium_background.dart';
+import 'widgets/app_snackbar.dart';
 import 'widgets/premium_button.dart';
 
 class UsuarioConfiguracoesScreen extends StatefulWidget {
@@ -66,29 +67,14 @@ class _UsuarioConfiguracoesScreenState extends State<UsuarioConfiguracoesScreen>
         await themeService.updateTheme(_temaAtual!, userType: 'usuario');
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Configurações salvas com sucesso'),
-              backgroundColor: PremiumTheme.successColor,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
+          AppSnackBar.success(context, 'Configuracoes salvas com sucesso');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar: ${e.toString()}'),
-            backgroundColor: PremiumTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        AppSnackBar.error(
+          context,
+          'Ops, algo deu errado.\nNao foi possivel salvar as configuracoes. Tente novamente em alguns instantes.',
         );
       }
     } finally {
@@ -197,9 +183,8 @@ class _UsuarioConfiguracoesScreenState extends State<UsuarioConfiguracoesScreen>
                                       setState(() {
                                         _temaAtual = value ? 'light' : 'dark';
                                       });
-                                      _salvarConfiguracoes();
                                     },
-                                    activeColor: PremiumTheme.primaryColor,
+                                    activeThumbColor: PremiumTheme.primaryColor,
                                     activeTrackColor: PremiumTheme.primaryColor.withOpacity(0.5),
                                   ),
                                 ],

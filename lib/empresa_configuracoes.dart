@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
 import 'services/geocoding_service.dart';
@@ -8,6 +9,7 @@ import 'services/theme_service.dart';
 import 'theme/premium_theme.dart';
 import 'widgets/premium_button.dart';
 import 'widgets/premium_background.dart';
+import 'widgets/app_snackbar.dart';
 
 class EmpresaConfiguracoesScreen extends StatefulWidget {
   const EmpresaConfiguracoesScreen({super.key});
@@ -29,6 +31,8 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
   String? _enderecoCompleto;
   String? _temaAtual;
   Map<String, dynamic>? _empresaData;
+  Timer? _enderecoBuscaDebounce;
+  int _enderecoBuscaToken = 0;
 
   @override
   void initState() {
@@ -38,9 +42,26 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
 
   @override
   void dispose() {
+    _enderecoBuscaDebounce?.cancel();
     _enderecoController.dispose();
     _whatsappController.dispose();
     super.dispose();
+  }
+
+  void _agendarBuscaEnderecos(String query) {
+    _enderecoBuscaDebounce?.cancel();
+
+    if (query.length < 3) {
+      setState(() {
+        _sugestoesEndereco = [];
+        _buscandoEndereco = false;
+      });
+      return;
+    }
+
+    _enderecoBuscaDebounce = Timer(const Duration(milliseconds: 350), () {
+      _buscarEnderecos(query);
+    });
   }
 
   Future<void> _carregarDadosEmpresa() async {
@@ -57,16 +78,8 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao carregar dados: ${e.toString()}'),
-            backgroundColor: PremiumTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+        final detail = 'Nao foi possivel carregar os dados da empresa. Tente novamente em alguns instantes.';
+        AppSnackBar.error(context, 'Ops, algo deu errado.\n$detail');
       }
     } finally {
       if (mounted) {
@@ -74,8 +87,8 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
       }
     }
   }
-
   Future<void> _buscarEnderecos(String query) async {
+    final int token = ++_enderecoBuscaToken;
     if (query.length < 3) {
       setState(() {
         _sugestoesEndereco = [];
@@ -89,14 +102,14 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
 
     try {
       final sugestoes = await GeocodingService.buscarEnderecos(query);
-      if (mounted) {
+      if (mounted && token == _enderecoBuscaToken && _enderecoController.text == query) {
         setState(() {
           _sugestoesEndereco = sugestoes;
           _buscandoEndereco = false;
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && token == _enderecoBuscaToken) {
         setState(() {
           _buscandoEndereco = false;
           _sugestoesEndereco = [];
@@ -131,16 +144,7 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
     }
 
     if (_enderecoController.text.isNotEmpty && (_latitude == null || _longitude == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Por favor, selecione um endereço da lista'),
-          backgroundColor: PremiumTheme.errorColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      AppSnackBar.error(context, 'Por favor, selecione um endereco da lista');
       return;
     }
 
@@ -148,7 +152,7 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
 
     try {
       final whatsappLimpo = _whatsappController.text.replaceAll(RegExp(r'[^0-9]'), '');
-      
+
       await _authService.atualizarDadosEmpresa(
         endereco: _enderecoController.text.isNotEmpty
             ? (_enderecoCompleto ?? _enderecoController.text.trim())
@@ -159,37 +163,19 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
         whatsapp: whatsappLimpo.isNotEmpty ? whatsappLimpo : null,
       );
 
-      // Atualizar tema via ThemeService
       if (_temaAtual != null) {
         final themeService = Provider.of<ThemeService>(context, listen: false);
         await themeService.updateTheme(_temaAtual!, userType: 'empresa');
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Configurações salvas com sucesso'),
-            backgroundColor: PremiumTheme.successColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+        AppSnackBar.success(context, 'Configuracoes salvas com sucesso');
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar: ${e.toString()}'),
-            backgroundColor: PremiumTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+        final detail = 'Nao foi possivel salvar as configuracoes. Verifique os dados e tente novamente.';
+        AppSnackBar.error(context, 'Ops, algo deu errado.\n$detail');
       }
     } finally {
       if (mounted) {
@@ -197,7 +183,6 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -295,7 +280,7 @@ class _EmpresaConfiguracoesScreenState extends State<EmpresaConfiguracoesScreen>
                                               : null,
                                     ),
                                     onChanged: (value) {
-                                      _buscarEnderecos(value);
+                                      _agendarBuscaEnderecos(value);
                                       if (value.isEmpty) {
                                         setState(() {
                                           _latitude = null;
