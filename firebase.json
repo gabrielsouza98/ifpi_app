@@ -4,7 +4,7 @@
       "android": {
         "default": {
           "projectId": "ifpi-app",
-          "appId": "1:560636982577:android:309accdbdda861d189ac10",
+          "appId": "1:560636982577:android:c25af63968ab628789ac10",
           "fileOutput": "android/app/google-services.json"
         }
       },
@@ -12,7 +12,7 @@
         "lib/firebase_options.dart": {
           "projectId": "ifpi-app",
           "configurations": {
-            "android": "1:560636982577:android:309accdbdda861d189ac10",
+            "android": "1:560636982577:android:c25af63968ab628789ac10",
             "ios": "1:560636982577:ios:c2f302aff49e958589ac10",
             "macos": "1:560636982577:ios:c2f302aff49e958589ac10",
             "web": "1:560636982577:web:6f74592625a48a8789ac10",
@@ -29,6 +29,9 @@
   },
   "dataconnect": {
     "source": "dataconnect"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   },
   "storage": {
     "rules": "storage.rules"

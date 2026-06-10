@@ -60,7 +60,6 @@ dependencies:
   
   # State Management
   provider: ^6.1.2
-  firebase_app_check: ^0.3.2+10
 
 dev_dependencies:
   flutter_test:

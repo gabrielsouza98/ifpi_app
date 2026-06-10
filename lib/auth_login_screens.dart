@@ -231,9 +231,6 @@ class _UsuarioLoginScreenState extends State<UsuarioLoginScreen> {
                                   _senhaController.text,
                                 );
                                 if (mounted) {
-                                  // recarrega tema para o usuário autenticado
-                                  final themeService = Provider.of<ThemeService>(context, listen: false);
-                                  await themeService.reloadTheme();
                                   AppSnackBar.success(context, 'Acesso realizado com sucesso');
                                   Navigator.pushReplacementNamed(context, '/usuario/dashboard');
                                 }
@@ -310,7 +307,7 @@ class _UsuarioLoginScreenState extends State<UsuarioLoginScreen> {
                                             await _authService.signInWithGoogleUsuario();
                                         if (result != null && mounted) {
                                           final themeService = Provider.of<ThemeService>(context, listen: false);
-                                          await themeService.reloadTheme();
+                                          themeService.reloadTheme();
                                           AppSnackBar.success(
                                             context,
                                             'Acesso realizado com sucesso',
@@ -638,7 +635,7 @@ class _EmpresaLoginScreenState extends State<EmpresaLoginScreen> {
                                 if (mounted) {
                                   final themeService =
                                       Provider.of<ThemeService>(context, listen: false);
-                                  await themeService.reloadTheme();
+                                  themeService.reloadTheme();
                                   AppSnackBar.success(context, 'Acesso realizado com sucesso');
                                   Navigator.pushReplacementNamed(context, '/empresa/dashboard');
                                 }
@@ -715,7 +712,7 @@ class _EmpresaLoginScreenState extends State<EmpresaLoginScreen> {
                                             await _authService.signInWithGoogleEmpresa();
                                         if (result != null && mounted) {
                                           final themeService = Provider.of<ThemeService>(context, listen: false);
-                                          await themeService.reloadTheme();
+                                          themeService.reloadTheme();
                                           AppSnackBar.success(
                                             context,
                                             'Acesso realizado com sucesso',
